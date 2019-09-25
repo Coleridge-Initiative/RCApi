@@ -1,3 +1,4 @@
+#Dimensions
 import dimensions_search_api_client as dscli
 import configparser
 
@@ -48,12 +49,62 @@ def dimensions_from_title(pub_entry,api_client):
     pub_entry.update({'dimensions':dimensions_pubs_dict})
     return pub_entry
 
-
-# ####
-
 def dimensions_main(pub):
     CONFIG = configparser.ConfigParser()
     CONFIG.read("dimensions.cfg")
     api_client = connect_ds_api(username= CONFIG.get('DEFAULT','username'),password = CONFIG.get('DEFAULT','password'))
     pub_dict = dimensions_from_title(pub_entry = pub,api_client = api_client)
+    return pub_dict
+
+
+#RePEc
+
+#  repec_token = CONFIG["DEFAULT"]["repec_token"]
+
+
+# SSRN
+from bs4 import BeautifulSoup
+import requests
+def get_author(soup):
+    author_chunk = soup.find(class_ = "authors authors-full-width")
+    author_chunk.find_all(['a', 'p'])
+    filtered_list = [e for e in author_chunk.find_all(['a', 'p']) if len(e.contents) == 1]
+    n = 2
+    nested_list = [filtered_list[i * n:(i + 1) * n] for i in range((len(filtered_list) + n - 1) // n )]  
+    auth_list = []
+    for i in nested_list:
+        auth = i[0].text
+        affl = i[1].text
+        auth_dict = {"author_name":auth,"affl":affl}
+        auth_list.append(auth_dict)
+    return(auth_list)
+
+def get_soup(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return soup
+
+def get_metadata(url):
+    soup = get_soup(url)
+    
+    pub_title = soup.find("meta", attrs={'name':'citation_title'})
+
+    title = pub_title['content']
+
+    keywords_list_raw = soup.find("meta", attrs={'name':'citation_keywords'})['content'].split(',')
+    keywords = [k.strip() for k in keywords_list_raw]
+
+    doi = soup.find("meta",  {"name": "citation_doi"})["content"]
+    
+    authors = get_author(soup)
+    
+    pub_dict = {'title':title,'keywords':keywords,'doi':doi, 'authors':authors, 'url':url}
+    return pub_dict
+
+def ssrn_main(pub):
+    url = pub['url']
+    if 'ssrn' not in url:
+        doi = pub['doi'].split('ssrn.',1)[1]
+        url = 'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=' + doi
+    pub_dict = get_metadata(url)
     return pub_dict

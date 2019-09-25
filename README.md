@@ -10,3 +10,7 @@ APIs used:
 * SSRN
 * EuropePMC
 * PMC/Pubmed
+
+
+### Notes on APIs
+* SSRN tends to not provide journal
