@@ -46,16 +46,20 @@ def format_dimensions(dimensions_md):
 def dimensions_from_title(title,api_client):
 #     title = pub_entry['title']
     dimensions_md_all = search_title(title = title, api_client = api_client)
-    dimensions_md = dimensions_md_all[0]
-    dimensions_pubs_dict = format_dimensions(dimensions_md)
-    dimensions_pubs_dict.update({'title':title})
+    if dimensions_md_all:
+        dimensions_md = dimensions_md_all[0]
+        dimensions_pubs_dict = format_dimensions(dimensions_md)
+        dimensions_pubs_dict.update({'title':title})
 #     pub_entry.update({'dimensions':dimensions_pubs_dict})
-    return dimensions_pubs_dict
+        return dimensions_pubs_dict
 
-def dimensions_title_search(title):
+def connect_api():
     CONFIG = configparser.ConfigParser()
     CONFIG.read("dimensions.cfg")
     api_client = connect_ds_api(username= CONFIG.get('DEFAULT','username'),password = CONFIG.get('DEFAULT','password'))
+    return api_client
+
+def dimensions_title_search(title,api_client):
     pub_dict = dimensions_from_title(title = title,api_client = api_client)
     return pub_dict
 

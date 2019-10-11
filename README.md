@@ -14,3 +14,7 @@ APIs used:
 
 ### Notes on APIs
 * SSRN tends to not provide journal
+
+### Dimensions
+`import RichContextAPI`
+`dimensions_title_search(title)`
