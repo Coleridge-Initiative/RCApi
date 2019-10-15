@@ -248,17 +248,19 @@ import xml
 API_URI = "http://api.openaire.eu/search/publications?title="
 
 def oa_lookup_pub_uris (title):
-        xml = oa_load_uri(API_URI + parse.quote(title))
-        pub_url = oa_extract_pub_uri(xml)
-        publisher = oa_extract_publisher(xml)
+    xml = oa_load_uri(API_URI + parse.quote(title))
+    pub_url = oa_extract_pub_uri(xml)
+    journal = oa_extract_journal(xml)
+    doi = oa_extract_doi(xml)
 
-        if pub_url:
-            oa_dict = {'url':pub_url,'publisher':publisher,'title':title}
-            return oa_dict
-        if not pub_url:
-            return None
+    if pub_url:
+        oa_dict = {'journal':journal,'title':title,'doi':doi}
+        oa_dict.update(pub_url)
+        return oa_dict
+    if not pub_url:
+        return None
 
-        import xml.etree.ElementTree as et
+
 
 NS = {
     "oaf": "http://namespace.openaire.eu/oaf"
@@ -273,8 +275,17 @@ def oa_extract_pub_uri (xml):
         url_list = result[0].findall("./children/instance/webresource/url")
 
         if len(url_list) > 0:
-            pub_url = url_list[0].text
-            return pub_url
+            url_list_text = [u.text for u in url_list]
+            pdf = [p for p in url_list_text if 'pdf' in p]
+            url = [u for u in url_list_text if u not in pdf and 'europepmc' in u]
+            url_dict = {}
+            if len(url) > 0:
+                url_dict.update({'url':url[0]})
+            if len(pdf) > 0:
+                url_dict.update({'pdf':pdf[0]})
+
+#             pub_url = url_list[0].text
+            return url_dict
 
     return None
 
@@ -287,7 +298,23 @@ def oa_extract_publisher (xml):
             publisher_name = publisher_list[0].attrib['name']
             return publisher_name
     elif len(result) == 0:
-        return Non
+        return None
     
+    
+def oa_extract_doi (xml):
+    root = et.fromstring(xml)
+    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result", NS)
+    if len(result) > 0:
+        doi = result[0].find("./pid[@classid='doi']")
+        if doi is not None:
+            doi = doi.text
+            return doi
 
-    
+def oa_extract_journal (xml):
+    root = et.fromstring(xml)
+    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result", NS)
+    if len(result) > 0:
+        journal = result[0].find("./journal")
+        if journal is not None:
+            journal_name = journal.text
+            return journal_name
