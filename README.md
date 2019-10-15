@@ -1,6 +1,8 @@
 # RCApi
 APIs for Rich Context Metadata
 
+use `enrich_pubs.ipynb` to see apis in action on a publication.
+
 ### Library of API calls to retrieve Rich Context Metadata
 
 APIs used:
