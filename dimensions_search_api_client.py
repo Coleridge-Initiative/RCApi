@@ -758,7 +758,7 @@ class DimensionsSearchAPIClient( object ):
         value_OUT = self.get_password()
        
         #return value_OUT sbr commented this out - don't want pw being printed out
-        print('API credentials have been set')
+#         print('API credentials have been set')
         
     
     #-- END method set_password() --#

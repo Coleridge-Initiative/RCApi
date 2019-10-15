@@ -1,6 +1,8 @@
 #Dimensions
 import dimensions_search_api_client as dscli
 import configparser
+import importlib
+importlib.reload(dscli)
 
 def connect_ds_api(username,password):
     api_client = dscli.DimensionsSearchAPIClient()
@@ -24,7 +26,8 @@ def search_title(title,api_client):
 
             return None
     except:
-        print('error with title {}'.format(title))
+        pass
+#         print('error with title {}'.format(title))
         
 def run_pub_id_search(dimensions_id,api_client):
     id_search_string = 'search publications where id = "{}" return publications[all] limit 1'.format(dimensions_id)
@@ -53,7 +56,7 @@ def dimensions_from_title(title,api_client):
 #     pub_entry.update({'dimensions':dimensions_pubs_dict})
         return dimensions_pubs_dict
 
-def connect_api():
+def connect_dimensions_api():
     CONFIG = configparser.ConfigParser()
     CONFIG.read("dimensions.cfg")
     api_client = connect_ds_api(username= CONFIG.get('DEFAULT','username'),password = CONFIG.get('DEFAULT','password'))
@@ -64,14 +67,23 @@ def dimensions_title_search(title,api_client):
     return pub_dict
 
 
-#RePEc
+def get_dimensions_md(title):
+    api_cnxn = connect_dimensions_api()
+    dimensions_md = dimensions_title_search(title,api_cnxn)
+    return dimensions_md
 
-#  repec_token = CONFIG["DEFAULT"]["repec_token"]
 
 
 # SSRN
 from bs4 import BeautifulSoup
 import requests
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+
 def get_author(soup):
     author_chunk = soup.find(class_ = "authors authors-full-width")
     author_chunk.find_all(['a', 'p'])
@@ -91,7 +103,7 @@ def get_soup(url):
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup
 
-def get_metadata(url):
+def get_ssrn_metadata(url):
     soup = get_soup(url)
     
     pub_title = soup.find("meta", attrs={'name':'citation_title'})
@@ -121,3 +133,161 @@ def ssrn_url_search(pub):
             return pub_dict
         elif 'ssrn' not in doi:
             return []
+        
+        
+def search_ssrn(title):
+    ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
+    browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
+    browser.get(ssrn_homepage)
+    class_name = 'form-control'
+    search = browser.find_element_by_class_name(class_name)
+    search.send_keys(title)
+    search.send_keys(Keys.RETURN)
+    search_url = browser.current_url
+    search_url_result = browser.get(search_url)
+    result_element = browser.find_element_by_xpath("//*[@class='title optClickTitle']")
+    ssrn_link = result_element.get_attribute('href')
+    browser.quit()
+    return ssrn_link
+
+
+def get_ssrn_md(title):
+    ssrn_article_url = search_ssrn(title)
+    ssrn_metadata = get_ssrn_metadata(ssrn_article_url)
+    return ssrn_metadata
+
+
+
+# EuropePMC
+from bs4 import BeautifulSoup
+import json
+import re
+import requests
+import sys
+import traceback
+import urllib.parse
+
+from bs4 import BeautifulSoup
+import json
+import re
+import requests
+import sys
+import traceback
+import urllib.parse
+
+
+def flatten(l):
+    sl = [item for sublist in l for item in sublist]
+    return sl
+def gen_empc_url(title):
+    epmc_url = 'http://europepmc.org/search?query=' + urllib.parse.quote(title)
+    return epmc_url
+
+def get_europepmc_metadata (url):
+    """
+    parse metadata from a Europe PMC web page for a publication
+    """
+
+    response = requests.get(url).text
+
+    publisher = None
+    doi = None
+    pdf = None
+
+    soup = BeautifulSoup(response, "html.parser")
+
+    for x in soup.find_all("span", {"id": "pmcmata"}):
+        publisher = x.get_text()
+
+    for x in soup.find_all("meta",  {"name": "citation_doi"}):
+        doi = x["content"]
+
+    for x in soup.find_all("meta",  {"name": "citation_pdf_url"}):
+        pdf = x["content"]
+
+    if publisher and doi and pdf:
+        epmc_data = {'journal':publisher,'doi':doi,'pdf':pdf}
+        return epmc_data
+    else:
+        return None
+    
+    
+def get_epmc_page(title):
+    search_url = gen_empc_url(title)
+    response = requests.get(search_url).text
+    soup = BeautifulSoup(response, "html.parser")
+    all_results = soup.findAll("div", {"itemtype": "http://schema.org/ScholarlyArticle"})
+    for article in all_results:
+        this_title = article.find('a',{'resultLink linkToAbstract'}).text.rstrip('.\n').lower()
+        my_title = title.lower()
+        if my_title == this_title:
+            article_url = 'http://europepmc.org' + article.find('div',{'abs_link_metadata pmid_free_text_information'}).find('span',{'freeResource'}).find('a',{'resultLink linkToFulltext'})['href'].split(';')[0].lstrip('.')
+            article_data = {'url':article_url,'title':this_title}
+        if my_title != this_title:
+            pass
+    return article_data
+
+def get_epmc_md(title):
+    page_md = get_epmc_page(title)
+    epmc_md = get_europepmc_metadata(page_md['url'])
+    epmc_md.update(page_md)
+    return epmc_md
+
+
+
+### openAIRE
+import urllib.request
+
+def oa_load_uri (uri):
+    with urllib.request.urlopen(uri) as response:
+        html = response.read()
+        return html.decode("utf-8")
+    
+from urllib import parse
+import xml
+API_URI = "http://api.openaire.eu/search/publications?title="
+
+def oa_lookup_pub_uris (title):
+        xml = oa_load_uri(API_URI + parse.quote(title))
+        pub_url = oa_extract_pub_uri(xml)
+        publisher = oa_extract_publisher(xml)
+
+        if pub_url:
+            oa_dict = {'url':pub_url,'publisher':publisher,'title':title}
+            return oa_dict
+        if not pub_url:
+            return None
+
+        import xml.etree.ElementTree as et
+
+NS = {
+    "oaf": "http://namespace.openaire.eu/oaf"
+    }
+
+import xml.etree.ElementTree as et
+def oa_extract_pub_uri (xml):
+    root = et.fromstring(xml)
+    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result", NS)
+
+    if len(result) > 0:
+        url_list = result[0].findall("./children/instance/webresource/url")
+
+        if len(url_list) > 0:
+            pub_url = url_list[0].text
+            return pub_url
+
+    return None
+
+def oa_extract_publisher (xml):
+    root = et.fromstring(xml)
+    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result", NS)
+    if len(result) > 0:
+        publisher_list = result[0].findall("./collectedfrom")
+        if len(publisher_list) > 0:
+            publisher_name = publisher_list[0].attrib['name']
+            return publisher_name
+    elif len(result) == 0:
+        return Non
+    
+
+    

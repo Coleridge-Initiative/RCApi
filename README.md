@@ -18,3 +18,13 @@ APIs used:
 ### Dimensions
 `import RichContextAPI`
 `dimensions_title_search(title)`
+
+### EuropePMC
+- we can add alt_ids for pmid, pmc. to do
+
+### OpenAire
+- we can get a repec id as an alt_id - to do
+
+Lets look to add other metadata fields:
+* keywords
+* mesh terms
