@@ -3,6 +3,13 @@ APIs for Rich Context Metadata
 
 use `enrich_pubs.ipynb` to see apis in action on a publication.
 
+### Instructions:
+1. Download Chrome webdriver [here](https://chromedriver.chromium.org/downloads) to enable Selenium to run, which is needed to grab metadata from SSRN.
+2. Create a config file and name it `api_config.cfg`. Should include:
+`username = <your dimensions api access username>`
+`password = <your dimensions api access password>`
+`chrome_exe_path = <path/to/chrome.exe>`
+
 ### Library of API calls to retrieve Rich Context Metadata
 
 APIs used:

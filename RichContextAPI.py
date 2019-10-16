@@ -58,7 +58,7 @@ def dimensions_from_title(title,api_client):
 
 def connect_dimensions_api():
     CONFIG = configparser.ConfigParser()
-    CONFIG.read("dimensions.cfg")
+    CONFIG.read("api_config.cfg")
     api_client = connect_ds_api(username= CONFIG.get('DEFAULT','username'),password = CONFIG.get('DEFAULT','password'))
     return api_client
 
@@ -138,7 +138,7 @@ def ssrn_url_search(pub):
 def search_ssrn(title):
     ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
     CONFIG = configparser.ConfigParser()
-    CONFIG.read("dimensions.cfg")
+    CONFIG.read("api_config.cfg")
     chrome_path = CONFIG.get('DEFAULT','chrome_exe_path')
     browser = webdriver.Chrome(executable_path=chrome_path)
     # browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
