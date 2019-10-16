@@ -137,7 +137,11 @@ def ssrn_url_search(pub):
         
 def search_ssrn(title):
     ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
-    browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
+    CONFIG = configparser.ConfigParser()
+    CONFIG.read("dimensions.cfg")
+    chrome_path = CONFIG.get('DEFAULT','chrome_exe_path')
+    browser = webdriver.Chrome(executable_path=chrome_path)
+    # browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
     browser.get(ssrn_homepage)
     class_name = 'form-control'
     search = browser.find_element_by_class_name(class_name)
