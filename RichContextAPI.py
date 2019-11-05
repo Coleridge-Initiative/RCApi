@@ -1,9 +1,26 @@
-#Dimensions
 import dimensions_search_api_client as dscli
 import configparser
-import importlib
-importlib.reload(dscli)
+import xml.etree.ElementTree as et
+from bs4 import BeautifulSoup
+import requests
+import time
+import urllib.request
+from urllib import parse
+import xml
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+import json
+import re
+import sys
+import traceback
+import urllib.parse
 
+###########################################################################################
+################################   DIMENSIONS    ##########################################
+###########################################################################################
 def connect_ds_api(username,password):
     api_client = dscli.DimensionsSearchAPIClient()
     api_client.set_max_in_items( 100 )
@@ -45,6 +62,10 @@ def format_dimensions(dimensions_md):
     pubs_dict_final = {k:pubs_dict[k] for k in final_keys}
     return pubs_dict_final
 
+def dimensions_run_exact_string_search(string,api_client):
+    search_string = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal+author_affiliations]'.format(string)
+    api_response = api_client.execute_query(query_string_IN = search_string )
+    return api_response
 
 def dimensions_from_title(title,api_client):
 #     title = pub_entry['title']
@@ -74,15 +95,9 @@ def get_dimensions_md(title):
 
 
 
-# SSRN
-from bs4 import BeautifulSoup
-import requests
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
+###########################################################################################
+####################################  SSRN   #############################################
+###########################################################################################
 
 def get_author(soup):
     author_chunk = soup.find(class_ = "authors authors-full-width")
@@ -161,23 +176,11 @@ def get_ssrn_md(title):
     return ssrn_metadata
 
 
+###########################################################################################
+###############################     EuropePMC     #########################################
+###########################################################################################
 
-# EuropePMC
-from bs4 import BeautifulSoup
-import json
-import re
-import requests
-import sys
-import traceback
-import urllib.parse
 
-from bs4 import BeautifulSoup
-import json
-import re
-import requests
-import sys
-import traceback
-import urllib.parse
 
 
 def flatten(l):
@@ -266,16 +269,23 @@ def get_epmc_md(title):
 
 
 
-### openAIRE
-import urllib.request
+
+
+
+###########################################################################################
+###############################     openAIRE     ##########################################
+###########################################################################################
+
+
+
+
 
 def oa_load_uri (uri):
     with urllib.request.urlopen(uri) as response:
         html = response.read()
         return html.decode("utf-8")
     
-from urllib import parse
-import xml
+
 API_URI = "http://api.openaire.eu/search/publications?title="
 
 def oa_lookup_pub_uris (title):
@@ -297,7 +307,6 @@ NS = {
     "oaf": "http://namespace.openaire.eu/oaf"
     }
 
-import xml.etree.ElementTree as et
 def oa_extract_pub_uri (xml):
     root = et.fromstring(xml)
     result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result", NS)
@@ -349,3 +358,7 @@ def oa_extract_journal (xml):
         if journal is not None:
             journal_name = journal.text
             return journal_name
+
+
+
+def full_text_search(search_term, api_name):
