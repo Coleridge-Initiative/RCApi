@@ -15,11 +15,10 @@ The file should include: <br />
 
 APIs used:
 * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
-* RePEc
 * OpenAIRE
 * SSRN
 * EuropePMC
-* PMC/Pubmed
+
 
 
 ### Notes on APIs
@@ -38,3 +37,8 @@ APIs used:
 Lets look to add other metadata fields:
 * keywords
 * mesh terms
+
+#### To Do
+##### Add Apis:
+* PMC/Pubmed
+* RePEc

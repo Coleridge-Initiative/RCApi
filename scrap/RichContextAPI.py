@@ -58,7 +58,7 @@ def dimensions_from_title(title,api_client):
 
 def connect_dimensions_api():
     CONFIG = configparser.ConfigParser()
-    CONFIG.read("richcontext_config.cfg")
+    CONFIG.read("api_config.cfg")
     api_client = connect_ds_api(username= CONFIG.get('DEFAULT','username'),password = CONFIG.get('DEFAULT','password'))
     return api_client
 
@@ -197,20 +197,11 @@ def get_europepmc_metadata (url):
     publisher = None
     doi = None
     pdf = None
-    new_url = None
 
     soup = BeautifulSoup(response, "html.parser")
 
-
-    publisher_list_pmcmata = soup.find_all("span", {"id": "pmcmata"})
-    if len(publisher_list_pmcmata) > 0:
-        for x in publisher_list_pmcmata:
-            publisher = x.get_text()
-    if len(publisher_list_pmcmata) == 0:
-        publisher_list_citation = soup.find_all("meta", {"name": "citation_journal_abbrev"})
-        if len(publisher_list_citation) > 0:
-            for x in publisher_list_citation:
-                publisher = x['content']
+    for x in soup.find_all("span", {"id": "pmcmata"}):
+        publisher = x.get_text()
 
     for x in soup.find_all("meta",  {"name": "citation_doi"}):
         doi = x["content"]
@@ -218,17 +209,8 @@ def get_europepmc_metadata (url):
     for x in soup.find_all("meta",  {"name": "citation_pdf_url"}):
         pdf = x["content"]
 
-    for x in soup.find_all("a",  {"class": "abs_publisher_link"}):
-        new_url = x['href']
-
-    if doi:
-        epmc_data = {'doi':doi}
-    if publisher:
-        epmc_data.update({'journal':publisher})
-    if pdf:
-        epmc_data.update({'pdf':pdf})
-    if new_url:
-        epmc_data.update({'url':new_url})
+    if publisher and doi and pdf:
+        epmc_data = {'journal':publisher,'doi':doi,'pdf':pdf}
         return epmc_data
     else:
         return None
@@ -243,13 +225,8 @@ def get_epmc_page(title):
         this_title = article.find('a',{'resultLink linkToAbstract'}).text.rstrip('.\n').lower()
         my_title = title.lower()
         if my_title == this_title:
-            article_open_url_search =  article.find('div',{'abs_link_metadata pmid_free_text_information'}).find('span',{'freeResource'})
-            if article_open_url_search is not None:
-                article_url = article_open_url_search.find('a',{'resultLink linkToFulltext'})
-            if article_open_url_search is None:
-                article_url = article.find('a',{'resultLink linkToAbstract'})
-            article_url_final = 'http://europepmc.org' + article_url['href'].split(';')[0].lstrip('.')
-            article_data = {'url':article_url_final,'title':this_title}
+            article_url = 'http://europepmc.org' + article.find('div',{'abs_link_metadata pmid_free_text_information'}).find('span',{'freeResource'}).find('a',{'resultLink linkToFulltext'})['href'].split(';')[0].lstrip('.')
+            article_data = {'url':article_url,'title':this_title}
             return article_data
         if my_title != this_title:
             return None
