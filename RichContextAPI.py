@@ -153,7 +153,7 @@ def ssrn_url_search(pub):
 def search_ssrn(title):
     ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
     CONFIG = configparser.ConfigParser()
-    CONFIG.read("api_config.cfg")
+    CONFIG.read("richcontext_config.cfg")
     chrome_path = CONFIG.get('DEFAULT','chrome_exe_path')
     browser = webdriver.Chrome(executable_path=chrome_path)
     # browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
@@ -362,3 +362,23 @@ def oa_extract_journal (xml):
 
 
 def full_text_search(search_term, api_name):
+    if api_name.lower() == 'dimensions':
+        api_client = connect_dimensions_api()
+        stringsearch_result =  dimensions_run_exact_string_search(string= search_term,api_client =api_client)
+    return stringsearch_result
+
+
+def title_search(title, api_name):
+    if api_name.lower() == 'dimensions':
+        titlesearch_result = get_dimensions_md(title)
+        
+    if api_name.lower() == 'ssrn':
+        titlesearch_result = search_ssrn(title)
+
+    if api_name.lower() == 'europepmc':
+        titlesearch_result = get_epmc_page(title)
+    
+    if api_name.lower() == 'openaire':
+        titlesearch_result = oa_lookup_pub_uris(title)
+        
+    return titlesearch_result
