@@ -368,7 +368,9 @@ def full_text_search(search_term, api_name):
     if api_name.lower() == 'dimensions':
         api_client = connect_dimensions_api()
         stringsearch_result =  dimensions_run_exact_string_search(string= search_term,api_client =api_client)
-    return stringsearch_result
+        if stringsearch_result:
+            ss_result = stringsearch_result['publications']
+    return ss_result
 
 
 def title_search(title, api_name):
