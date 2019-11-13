@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from urllib import parse
+#from urllib import parse
 import configparser
 import dimensions_search_api_client as dscli
 import json
@@ -22,11 +22,14 @@ import urllib.request
 import xml
 import xml.etree.ElementTree as et
 
-CONFIG_FILE = "richcontext_config.cfg"
+CONFIG_FILE = "rc.cfg"
+
+CONFIG = configparser.ConfigParser()
+CONFIG.read(CONFIG_FILE)
 
 
-###########################################################################################
-## EuropePMC
+######################################################################
+## utility functions
 
 def get_xml_node_value (root, name):
     """
@@ -40,19 +43,28 @@ def get_xml_node_value (root, name):
         return None
 
 
+def clean_text (text):
+    return re.sub("\s+", " ", text.strip(" \"'?!.,")).lower()
+
+
 def title_match (title0, title1):
     """
     within reason, do the two titles match?
     """
-    return title0 == title1
+    return clean_text(title0) == clean_text(title1)
+
+
+######################################################################
+## EuropePMC
+
+EUROPEPMC_API_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
 
 
 def europepmc_get_url (title):
     """
     construct a URL to query the API for EuropePMC
     """
-    EUROPEPMC_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query="
-    return EUROPEPMC_URL + urllib.parse.quote(title)
+    return EUROPEPMC_API_URL.format(urllib.parse.quote(title))
 
 
 def europepmc_title_search (title):
@@ -83,97 +95,40 @@ def europepmc_title_search (title):
     return meta
 
 
+######################################################################
+## openAIRE
 
-def get_europepmc_metadata (url):
+OPENAIRE_API_URL = "http://api.openaire.eu/search/publications?title={}"
+
+
+def openaire_get_url (title):
     """
-    parse metadata from a Europe PMC web page for a publication
+    construct a URL to query the API for OpenAIRE
     """
+    return OPENAIRE_API_URL.format(urllib.parse.quote(title))
+
+
+def openaire_title_search (title):
+    """
+    parse metadata from XML returned from the OpenAIRE API query
+    """
+    url = openaire_get_url(title)
     response = requests.get(url).text
-
-    publisher = None
-    doi = None
-    pdf = None
-    new_url = None
-
     soup = BeautifulSoup(response,  "html.parser")
-    publisher_list_pmcmata = soup.find_all("span",  {"id": "pmcmata"})
+    #print(soup)
 
-    if len(publisher_list_pmcmata) > 0:
-        for x in publisher_list_pmcmata:
-            publisher = x.get_text()
+    meta = OrderedDict()
 
-    else:
-        publisher_list_citation = soup.find_all("meta",  {"name": "citation_journal_abbrev"})
+    for result in soup.find_all("oaf:result"):
+        result_title = get_xml_node_value(result, "title")
 
-        if len(publisher_list_citation) > 0:
-            for x in publisher_list_citation:
-                publisher = x["content"]
+        if title_match(title, result_title):
+            meta["url"] = get_xml_node_value(result, "url")
+            meta["authors"] = [a.text for a in result.find_all("creator")]
+            meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+            break
 
-    for x in soup.find_all("meta", {"name": "citation_doi"}):
-        doi = x["content"]
-
-    for x in soup.find_all("meta", {"name": "citation_pdf_url"}):
-        pdf = x["content"]
-
-    for x in soup.find_all("a", {"class": "abs_publisher_link"}):
-        new_url = x["href"]
-
-    if doi:
-        epmc_data = {"doi":doi}
-    if publisher:
-        epmc_data.update({"journal":publisher})
-    if pdf:
-        epmc_data.update({"pdf":pdf})
-    if new_url:
-        epmc_data.update({"url":new_url})
-        return epmc_data
-    else:
-        return None
-    
-    
-def get_epmc_page (title):
-    search_url = gen_empc_url(title)
-    print(search_url)
-
-    response = requests.get(search_url).text
-    print(response)
-
-    soup = BeautifulSoup(response,  "html.parser")
-    all_results = soup.findAll("div",  {"itemtype": "http://schema.org/ScholarlyArticle"})
-
-    for article in all_results:
-        this_title = article.find("a", {"resultLink linkToAbstract"}).text.rstrip(".\n").lower()
-        my_title = title.lower()
-
-        if my_title == this_title:
-            article_open_url_search = article.find(
-                "div",
-                {"abs_link_metadata pmid_free_text_information"}
-                ).find("span", {"freeResource"})
-
-            if article_open_url_search is not None:
-                article_url = article_open_url_search.find("a", {"resultLink linkToFulltext"})
-            else:
-                article_url = article.find("a", {"resultLink linkToAbstract"})
-
-            article_url_final = "http://europepmc.org" + article_url["href"].split(";")[0].lstrip(".")
-            article_data = {"url":article_url_final, "title":this_title}
-            return article_data
-
-        else:
-            return None
-    
-
-def get_epmc_md (title):
-    page_md = get_epmc_page(title)
-
-    if page_md is not None:
-        epmc_md = get_europepmc_metadata(page_md["url"])
-        epmc_md.update(page_md)
-        return epmc_md
-
-    else:
-        return None
+    return meta
 
 
 ###########################################################################################
@@ -337,89 +292,6 @@ def get_ssrn_md(title):
 
 
 ###########################################################################################
-###############################     openAIRE     ##########################################
-###########################################################################################
-
-def oa_load_uri (uri):
-    with urllib.request.urlopen(uri) as response:
-        html = response.read()
-        return html.decode("utf-8")
-    
-
-API_URI = "http://api.openaire.eu/search/publications?title="
-
-def oa_lookup_pub_uris (title):
-    xml = oa_load_uri(API_URI + parse.quote(title))
-    pub_url = oa_extract_pub_uri(xml)
-    journal = oa_extract_journal(xml)
-    doi = oa_extract_doi(xml)
-
-    if pub_url:
-        oa_dict = {'journal':journal, 'title':title, 'doi':doi}
-        oa_dict.update(pub_url)
-        return oa_dict
-    if not pub_url:
-        return None
-
-
-
-NS = {
-    "oaf": "http://namespace.openaire.eu/oaf"
-    }
-
-def oa_extract_pub_uri (xml):
-    root = et.fromstring(xml)
-    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result",  NS)
-
-    if len(result) > 0:
-        url_list = result[0].findall("./children/instance/webresource/url")
-
-        if len(url_list) > 0:
-            url_list_text = [u.text for u in url_list]
-            pdf = [p for p in url_list_text if 'pdf' in p]
-            url = [u for u in url_list_text if u not in pdf and 'europepmc' in u]
-            url_dict = {}
-            if len(url) > 0:
-                url_dict.update({'url':url[0]})
-            if len(pdf) > 0:
-                url_dict.update({'pdf':pdf[0]})
-
-#             pub_url = url_list[0].text
-            return url_dict
-
-    return None
-
-def oa_extract_publisher (xml):
-    root = et.fromstring(xml)
-    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result",  NS)
-    if len(result) > 0:
-        publisher_list = result[0].findall("./collectedfrom")
-        if len(publisher_list) > 0:
-            publisher_name = publisher_list[0].attrib['name']
-            return publisher_name
-    elif len(result) == 0:
-        return None
-    
-    
-def oa_extract_doi (xml):
-    root = et.fromstring(xml)
-    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result",  NS)
-    if len(result) > 0:
-        doi = result[0].find("./pid[@classid='doi']")
-        if doi is not None:
-            doi = doi.text
-            return doi
-
-def oa_extract_journal (xml):
-    root = et.fromstring(xml)
-    result = root.findall("./results/result[1]/metadata/oaf:entity/oaf:result",  NS)
-    if len(result) > 0:
-        journal = result[0].find("./journal")
-        if journal is not None:
-            journal_name = journal.text
-            return journal_name
-
-###########################################################################################
 ############################  Consolidated Functions   ####################################
 ###########################################################################################
 
@@ -457,5 +329,5 @@ if __name__ == "__main__":
 
     title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
 
-    results = europepmc_title_search(title)
+    results = openaire_title_search(title)
     print(results)

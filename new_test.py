@@ -13,6 +13,12 @@ class TestCallAPIs (unittest.TestCase):
         meta = rcapi.europepmc_title_search(title)
         self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.appet.2017.07.006'), ('pmcid', 'PMC5574185'), ('journal', 'Appetite'), ('authors', ['Taillie LS', 'Ng SW', 'Xue Y', 'Harding M.']), ('pdf', 'http://europepmc.org/articles/PMC5574185?pdf=render')])")
 
+    def test_openaire_title_search (self):
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+
+        meta = rcapi.openaire_title_search(title)
+        self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
+
 
 if __name__ == "__main__":
     unittest.main()
