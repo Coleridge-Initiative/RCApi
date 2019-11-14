@@ -15,22 +15,25 @@ Use `enrich_pubs.ipynb` to see APIs in action for a publication.
 
 | parameter | value | 
 | --- | --- |
-| `username` | Dimensions API username |
-| `password` | Dimensions API password |
 | `chrome_exe_path` | path/to/chrome.exe |
+| `dimensions_username` | Dimensions API username |
+| `dimensions_password` | Dimensions API password |
+| `repec_token` | RePEc API token |
 
 
 ## API integrations to retrieve metadata for Rich Context
 
 APIs used:
 
+  * [RePEc](https://ideas.repec.org/api.html)
+  * [OpenAIRE](https://develop.openaire.eu/)
+  * [EuropePMC](https://europepmc.org/RestfulWebService)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
-  * OpenAIRE
   * SSRN
-  * EuropePMC
 
 
-## Notes on APIs
+## Notes about specific APIs
+
 * SSRN tends to not provide journal
 
 ### Dimensions
@@ -46,9 +49,3 @@ APIs used:
 Lets look to add other metadata fields:
 * keywords
 * mesh terms
-
-
-#### To Do
-##### Add Apis:
-* PMC/Pubmed
-* RePEc
