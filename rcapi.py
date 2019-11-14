@@ -8,7 +8,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-#from urllib import parse
 import configparser
 import dimensions_search_api_client as dscli
 import json
@@ -19,8 +18,7 @@ import time
 import traceback
 import urllib.parse
 import urllib.request
-import xml
-import xml.etree.ElementTree as et
+
 
 CONFIG_FILE = "rc.cfg"
 
@@ -43,15 +41,15 @@ def get_xml_node_value (root, name):
         return None
 
 
-def clean_text (text):
-    return re.sub("\s+", " ", text.strip(" \"'?!.,")).lower()
+def clean_title (title):
+    return re.sub("\s+", " ", title.strip(" \"'?!.,")).lower()
 
 
 def title_match (title0, title1):
     """
     within reason, do the two titles match?
     """
-    return clean_text(title0) == clean_text(title1)
+    return clean_title(title0) == clean_title(title1)
 
 
 ######################################################################
@@ -60,7 +58,7 @@ def title_match (title0, title1):
 EUROPEPMC_API_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
 
 
-def europepmc_get_url (title):
+def europepmc_get_api_url (title):
     """
     construct a URL to query the API for EuropePMC
     """
@@ -71,10 +69,10 @@ def europepmc_title_search (title):
     """
     parse metadata from XML returned from the EuropePMC API query
     """
-    url = europepmc_get_url(title)
+    url = europepmc_get_api_url(title)
     response = requests.get(url).text
     soup = BeautifulSoup(response,  "html.parser")
-    #print(soup)
+    #print(soup.prettify())
 
     meta = OrderedDict()
     result_list = soup.find_all("result")
@@ -101,7 +99,7 @@ def europepmc_title_search (title):
 OPENAIRE_API_URL = "http://api.openaire.eu/search/publications?title={}"
 
 
-def openaire_get_url (title):
+def openaire_get_api_url (title):
     """
     construct a URL to query the API for OpenAIRE
     """
@@ -112,10 +110,10 @@ def openaire_title_search (title):
     """
     parse metadata from XML returned from the OpenAIRE API query
     """
-    url = openaire_get_url(title)
+    url = openaire_get_api_url(title)
     response = requests.get(url).text
     soup = BeautifulSoup(response,  "html.parser")
-    #print(soup)
+    #print(soup.prettify())
 
     meta = OrderedDict()
 
@@ -131,7 +129,61 @@ def openaire_title_search (title):
     return meta
 
 
-###########################################################################################
+######################################################################
+## RePEc API
+
+REPEC_CGI_URL = "https://ideas.repec.org/cgi-bin/htsearch?q={}"
+REPEC_API_URL = "https://api.repec.org/call.cgi?code={}&getref={}"
+
+
+def repec_get_cgi_url (title):
+    """
+    construct a URL to query the CGI for RePEc
+    """
+    enc_title = urllib.parse.quote_plus(title.replace("(", "").replace(")", "").replace(":", ""))
+    return REPEC_CGI_URL.format(enc_title)
+
+
+def repec_get_api_url (handle, token):
+    """
+    construct a URL to query the API for RePEc
+    """
+    return REPEC_API_URL.format(token, handle)
+
+
+def repec_get_handle (title):
+    url = repec_get_cgi_url(title)
+    response = requests.get(url).text
+    soup = BeautifulSoup(response,  "html.parser")
+    #print(soup.prettify())
+
+    ol = soup.find("ol", {"class": "list-group"})
+    results = ol.findChildren()
+
+    if len(results) > 0:
+        li = results[0]
+        handle = li.find("i").get_text()
+        return handle
+    else:
+        return None
+
+
+def repec_get_meta (token, handle):
+    try:
+        url = repec_get_api_url(token, handle)
+        response = requests.get(url).text
+
+        meta = json.loads(response)
+        return meta
+
+    except:
+        print(traceback.format_exc())
+        print("ERROR: {}".format(handle))
+        return None
+
+
+
+######################################################################
 ## Dimensions API
 
 def connect_ds_api (username, password):
@@ -328,6 +380,11 @@ def title_search(title, api_name):
 if __name__ == "__main__":
 
     title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+    title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
 
-    results = openaire_title_search(title)
+    token = CONFIG["DEFAULT"]["repec_token"]
+    handle = repec_get_handle(title)
+    print("handle", handle) 
+    results = repec_get_meta(token, handle)
+
     print(results)

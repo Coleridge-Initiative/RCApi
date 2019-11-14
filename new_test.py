@@ -19,6 +19,11 @@ class TestCallAPIs (unittest.TestCase):
         meta = rcapi.openaire_title_search(title)
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
 
+    def test_repec_handle_lookup (self):
+        title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
+        handle = rcapi.repec_get_handle(title)
+        self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
+
 
 if __name__ == "__main__":
     unittest.main()
