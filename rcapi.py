@@ -184,6 +184,29 @@ def repec_get_meta (token, handle):
 
 
 ######################################################################
+## Semantic Scholar API
+
+SEMANTIC_API_URL = "http://api.semanticscholar.org/v1/paper/{}"
+
+
+def semantic_get_api_url (identifier):
+    """
+    construct a URL to query the API for Semantic Scholar
+    """
+    return SEMANTIC_API_URL.format(identifier)
+
+
+def semantic_paper_lookup (identifier):
+    """
+    parse metadata returned from a Semantic Scholar API query
+    """
+    url = semantic_get_api_url(identifier)
+    meta = requests.get(url).text
+    return meta
+
+
+
+######################################################################
 ## Dimensions API
 
 def connect_ds_api (username, password):
@@ -378,6 +401,12 @@ def title_search(title, api_name):
 ## main entry point
 
 if __name__ == "__main__":
+
+    doi = "10.1016/j.appet.2017.07.006"
+    results = semantic_paper_lookup(doi)
+    print(results)
+
+    sys.exit(0)
 
     title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
     title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"

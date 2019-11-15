@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-import unittest
+import json
 import rcapi
+import unittest
 
    
 class TestCallAPIs (unittest.TestCase):
@@ -23,6 +24,13 @@ class TestCallAPIs (unittest.TestCase):
         title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
         handle = rcapi.repec_get_handle(title)
         self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
+
+
+    def test_semantic_paper_lookup (self):
+        doi = "10.1016/j.appet.2017.07.006"
+        results = rcapi.semantic_paper_lookup(doi)
+        meta = json.loads(results)
+        self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
 
 
 if __name__ == "__main__":

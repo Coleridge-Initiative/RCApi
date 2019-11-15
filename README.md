@@ -2,8 +2,6 @@
 
 APIs for Rich Context Metadata
 
-Use `enrich_pubs.ipynb` to see APIs in action for a publication.
-
 
 ## Instructions
 
@@ -28,24 +26,9 @@ APIs used:
   * [RePEc](https://ideas.repec.org/api.html)
   * [OpenAIRE](https://develop.openaire.eu/)
   * [EuropePMC](https://europepmc.org/RestfulWebService)
+  * [Semantic Scholar](http://api.semanticscholar.org/)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
   * SSRN
 
 
-## Notes about specific APIs
-
-* SSRN tends to not provide journal
-
-### Dimensions
-`import RichContextAPI`
-`dimensions_title_search(title)`
-
-### EuropePMC
-- we can add alt_ids for pmid, pmc. to do
-
-### OpenAire
-- we can get a repec id as an alt_id - to do
-
-Lets look to add other metadata fields:
-* keywords
-* mesh terms
+Use `enrich_pubs.ipynb` to see APIs in action for a publication.
