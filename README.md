@@ -6,7 +6,7 @@ scholarly infrastructure providers.
 For the development of the Rich Context knowledge graph this library
 is used to identify:
 
-  * datasets used for research projects
+  * dataset links to research
   * locating open access publications
   * reconciling author profiles
   * reconciling keyword mesh
@@ -42,8 +42,8 @@ APIs used to retrieve metadata:
   * [EuropePMC](https://europepmc.org/RestfulWebService)
   * [Semantic Scholar](http://api.semanticscholar.org/)
   * [Unpaywall](https://unpaywall.org/products/api)
+  * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
-  * SSRN
 
 
 See `enrich_pubs.ipynb` for example API usage to pull federated
@@ -51,7 +51,7 @@ metadata for a publication.
 
 For more background about *open access publications* see:
 
-> Piwowar H, et al., 2017.  
+> Piwowar H, Priem J, Larivière V, Alperin JP, Matthias L, Norlander B, Farley A, West J, Haustein S. 2017.  
 The State of OA: A large-scale analysis of the prevalence and impact of Open Access articles  
 *PeerJ Preprints* 5:e3119v1  
 <https://doi.org/10.7287/peerj.preprints.3119v1>

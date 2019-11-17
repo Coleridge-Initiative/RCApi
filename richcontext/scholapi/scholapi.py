@@ -230,6 +230,28 @@ class ScholInfraAPI:
         return json.loads(meta)
 
 
+    ######################################################################
+    ## dissemin API
+
+    DISSEMIN_API_URL = "https://dissem.in/api/{}"
+
+    @classmethod
+    def dissemin_get_api_url (cls, doi):
+        """
+        construct a URL to query the dissemin API
+        """
+        return cls.DISSEMIN_API_URL.format(doi)
+
+
+    def dissemin_publication_lookup (self, doi):
+        """
+        parse metadata returned from a dissemin API query
+        """
+        url = ScholInfraAPI.dissemin_get_api_url(doi)
+        meta = requests.get(url).text
+        return json.loads(meta)
+
+
 ######################################################################
 ## main entry point (not used)
 
