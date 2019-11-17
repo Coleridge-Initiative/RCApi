@@ -196,14 +196,35 @@ def semantic_get_api_url (identifier):
     return SEMANTIC_API_URL.format(identifier)
 
 
-def semantic_paper_lookup (identifier):
+def semantic_publication_lookup (identifier):
     """
     parse metadata returned from a Semantic Scholar API query
     """
     url = semantic_get_api_url(identifier)
     meta = requests.get(url).text
-    return meta
+    return json.loads(meta)
 
+
+######################################################################
+## Unpaywall API
+
+UNPAYWALL_API_URL = "https://api.unpaywall.org/v2/{}?email={}"
+
+
+def unpaywall_get_api_url (doi, email):
+    """
+    construct a URL to query the API for Unpaywall
+    """
+    return UNPAYWALL_API_URL.format(doi, email)
+
+
+def unpaywall_publication_lookup (doi, email):
+    """
+    parse metadata returned from an Unpaywall API query
+    """
+    url = unpaywall_get_api_url(doi, email)
+    meta = requests.get(url).text
+    return json.loads(meta)
 
 
 ######################################################################
@@ -258,19 +279,19 @@ def dimensions_run_exact_string_search(string, api_client):
     return api_response
 
 def dimensions_from_title(title, api_client):
-#     title = pub_entry['title']
+#     title = pub_entry["title"]
     dimensions_md_all = search_title(title = title,  api_client = api_client)
     if dimensions_md_all:
         dimensions_md = dimensions_md_all[0]
         dimensions_pubs_dict = format_dimensions(dimensions_md)
-        dimensions_pubs_dict.update({'title':title})
-#     pub_entry.update({'dimensions':dimensions_pubs_dict})
+        dimensions_pubs_dict.update({"title":title})
+#     pub_entry.update({"dimensions":dimensions_pubs_dict})
         return dimensions_pubs_dict
 
 def connect_dimensions_api():
-    CONFIG = configparser.ConfigParser()
-    CONFIG.read(CONFIG_FILE)
-    api_client = connect_ds_api(username= CONFIG.get('DEFAULT', 'username'), password = CONFIG.get('DEFAULT', 'password'))
+    username = CONFIG["DEFAULT"]["email"]
+    password = CONFIG["DEFAULT"]["dimensions_password"]
+    api_client = connect_ds_api(username, password)
     return api_client
 
 def dimensions_title_search(title, api_client):
@@ -291,8 +312,8 @@ def get_dimensions_md(title):
 
 def get_author(soup):
     author_chunk = soup.find(class_ = "authors authors-full-width")
-    author_chunk.find_all(['a',  'p'])
-    filtered_list = [e for e in author_chunk.find_all(['a',  'p']) if len(e.contents) == 1]
+    author_chunk.find_all(["a",  "p"])
+    filtered_list = [e for e in author_chunk.find_all(["a",  "p"]) if len(e.contents) == 1]
     n = 2
     nested_list = [filtered_list[i * n:(i + 1) * n] for i in range((len(filtered_list) + n - 1) // n )]  
     auth_list = []
@@ -305,58 +326,60 @@ def get_author(soup):
 
 def get_soup(url):
     response = requests.get(url)
-    soup = BeautifulSoup(response.text,  'html.parser')
+    soup = BeautifulSoup(response.text,  "html.parser")
     return soup
 
 def get_ssrn_metadata(url):
     soup = get_soup(url)
     
-    pub_title = soup.find("meta",  attrs={'name':'citation_title'})
+    pub_title = soup.find("meta",  attrs={"name":"citation_title"})
 
-    title = pub_title['content']
+    title = pub_title["content"]
 
-    keywords_list_raw = soup.find("meta",  attrs={'name':'citation_keywords'})['content'].split(', ')
+    keywords_list_raw = soup.find("meta",  attrs={"name":"citation_keywords"})["content"].split(", ")
     keywords = [k.strip() for k in keywords_list_raw]
 
     doi = soup.find("meta",   {"name": "citation_doi"})["content"]
     
     authors = get_author(soup)
     
-    pub_dict = {'title':title, 'keywords':keywords, 'doi':doi,  'authors':authors,  'url':url}
+    pub_dict = {"title":title, "keywords":keywords, "doi":doi,  "authors":authors,  "url":url}
     return pub_dict
 
 def ssrn_url_search(pub):
-    url = pub['url']
-    doi = pub['doi']
-    if 'ssrn' in url:
+    url = pub["url"]
+    doi = pub["doi"]
+    if "ssrn" in url:
         pub_dict = get_metadata(url)
-    elif 'ssrn' not in url:
-        if 'ssrn' in doi:
-            doi = doi.split('ssrn.', 1)[1]
-            url = 'https://papers.ssrn.com/sol3/papers.cfm?abstract_id=' + doi
+    elif "ssrn" not in url:
+        if "ssrn" in doi:
+            doi = doi.split("ssrn.", 1)[1]
+            url = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=" + doi
             pub_dict = get_metadata(url)
             return pub_dict
-        elif 'ssrn' not in doi:
+        elif "ssrn" not in doi:
             return []
         
         
 def search_ssrn(title):
-    ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
-    CONFIG = configparser.ConfigParser()
-    CONFIG.read(CONFIG_FILE)
-    chrome_path = CONFIG.get('DEFAULT',  'chrome_exe_path')
+    ssrn_homepage = "https://www.ssrn.com/index.cfm/en/"
+    chrome_path = CONFIG["DEFAULT"]["chrome_exe_path"]
     browser = webdriver.Chrome(executable_path=chrome_path)
     # browser = webdriver.Chrome(executable_path="/Users/sophierand/RCApi/chromedriver.exe")
+
     browser.get(ssrn_homepage)
-    class_name = 'form-control'
+    class_name = "form-control"
+
     search = browser.find_element_by_class_name(class_name)
     search.send_keys(title)
     search.send_keys(Keys.RETURN)
+
     search_url = browser.current_url
     search_url_result = browser.get(search_url)
     result_element = browser.find_element_by_xpath("//*[@class='title optClickTitle']")
-    ssrn_link = result_element.get_attribute('href')
+    ssrn_link = result_element.get_attribute("href")
     browser.quit()
+
     return ssrn_link
 
 
@@ -372,26 +395,26 @@ def get_ssrn_md(title):
 
 
 def full_text_search(search_term, api_name):
-    if api_name.lower() == 'dimensions':
+    if api_name.lower() == "dimensions":
         api_client = connect_dimensions_api()
         stringsearch_result =  dimensions_run_exact_string_search(string=search_term, api_client=api_client)
 
         if stringsearch_result:
-            ss_result = stringsearch_result['publications']
+            ss_result = stringsearch_result["publications"]
     return ss_result
 
 
 def title_search(title, api_name):
-    if api_name.lower() == 'dimensions':
+    if api_name.lower() == "dimensions":
         titlesearch_result = get_dimensions_md(title)
         
-    if api_name.lower() == 'ssrn':
+    if api_name.lower() == "ssrn":
         titlesearch_result = search_ssrn(title)
 
-    if api_name.lower() == 'europepmc':
+    if api_name.lower() == "europepmc":
         titlesearch_result = get_epmc_page(title)
     
-    if api_name.lower() == 'openaire':
+    if api_name.lower() == "openaire":
         titlesearch_result = oa_lookup_pub_uris(title)
         
     return titlesearch_result
@@ -403,7 +426,9 @@ def title_search(title, api_name):
 if __name__ == "__main__":
 
     doi = "10.1016/j.appet.2017.07.006"
-    results = semantic_paper_lookup(doi)
+    email = CONFIG["DEFAULT"]["email"]
+
+    results = unpaywall_publication_lookup(doi, email)
     print(results)
 
     sys.exit(0)

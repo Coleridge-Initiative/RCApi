@@ -26,11 +26,16 @@ class TestCallAPIs (unittest.TestCase):
         self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
 
 
-    def test_semantic_paper_lookup (self):
+    def test_semantic_publication_lookup (self):
         doi = "10.1016/j.appet.2017.07.006"
-        results = rcapi.semantic_paper_lookup(doi)
-        meta = json.loads(results)
+        meta = rcapi.semantic_publication_lookup(doi)
         self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
+
+    def test_unpaywall_publication_lookup (self):
+        doi = "10.1016/j.appet.2017.07.006"
+        email = "info@derwen.ai"
+        meta = rcapi.unpaywall_publication_lookup(doi, email)
+        self.assertTrue(meta["doi_url"] == "https://doi.org/10.1016/j.appet.2017.07.006")
 
 
 if __name__ == "__main__":
