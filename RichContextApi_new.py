@@ -2,9 +2,11 @@ import configparser
 import dimensions_search_api_client as dscli
 import urllib
 import requests
+import re
 from urllib import parse
 import xml.etree.ElementTree as et
 from bs4 import BeautifulSoup
+import json
 
 
 ###########################################################################################
@@ -36,7 +38,10 @@ def dimensions_fulltext_search(search_term,api_client):
     search_string = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
     api_response = api_client.execute_query(query_string_IN = search_string )
     publication_data = api_response['publications']
-    [p.update({'journal':p['journal']['title']}) for p in publication_data]
+    try:
+        [p.update({'journal':p['journal']['title']}) for p in publication_data]
+    except:
+        pass
     return publication_data
 
 ###########################################################################################
@@ -194,3 +199,4 @@ def fulltext_search(search_term,api_name):
         fulltext_result = rg_fulltext_search(search_term = search_term)
     if api_name.lower() == 'openaire':
         fulltext_result = oa_fulltext_search(search_term = search_term)
+    return fulltext_result
