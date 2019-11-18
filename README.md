@@ -43,3 +43,4 @@ Lets look to add other metadata fields:
 * PMC/Pubmed
 * RePEc
 * Springer (https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
+* https://paperswithcode.com/?ref=semscholar

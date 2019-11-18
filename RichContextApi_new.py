@@ -44,7 +44,7 @@ def dimensions_fulltext_search(search_term,api_client):
 ###########################################################################################
 
 ################################   page url search    #####################################
-def get_europepmc_metadata (url):
+def epmc_url_search (url):
     """
     parse metadata from a Europe PMC web page for a publication
     example url: http://europepmc.org/abstract/MED/20195444
@@ -96,6 +96,48 @@ def get_europepmc_metadata (url):
     else:
         return None
 
+###########################################################################################
+##########################       OpenAire functions    ###############################
+###########################################################################################
+
+##########################   full text string search    ###########################
+    
+    
+def oa_fulltext_search(search_term):
+    search_term_format = re.sub(" ","+",search_term)
+    search_url = 'https://explore.openaire.eu/search/find?keyword=%22{}%22'.format(search_term_format)
+    response = requests.get(search_url).text
+    soup = BeautifulSoup(response, "html.parser")
+    titles = soup.find_all("div",  {"class": "uk-h5"})
+    pub_list = []
+    for t in titles:
+        pub_dict = {}
+        pub_dict.update({'title':t.text,'url':"https://explore.openaire.eu" + t.contents[0]['href']})
+        url_vals = oa_url_search(pub_dict['url'])
+        try:
+            doi = url_vals['doi']
+            pub_dict.update({'doi':doi})
+        except:
+            pass
+        pub_list.append(pub_dict)
+    return pub_list
+
+##########################   url search    ###########################
+
+def oa_url_search(url):
+    response = requests.get(url).text
+    soup = BeautifulSoup(response, "html.parser")
+    data = soup.select("[type='application/ld+json']")[0]
+    pub_dict = {'url':url,'title':json.loads(data.text)["name"]}
+    try:
+        if json.loads(data.text)["identifier"]['propertyID'] == 'doi':
+            doi = json.loads(data.text)["identifier"]["value"]
+            pub_dict.update({'doi':json.loads(data.text)["identifier"]["value"]})
+        else:
+            pass
+    except:
+        pass
+    return pub_dict
 
 ###########################################################################################
 ##########################       ResearchGate functions    ###############################
@@ -103,7 +145,7 @@ def get_europepmc_metadata (url):
 
 ##########################   full text string search    ###########################
     
-def rg_query(search_term):
+def rg_fulltext_search(search_term):
     pub_list = []
     search_term_format = re.sub(" ","+",search_term)
     search_url = 'https://www.researchgate.net/search/publication?q=%22{}%22'.format(search_term_format)
@@ -140,14 +182,15 @@ def title_search(title, api_name):
 
 def url_search(url,api_name):
     if api_name.lower() == "europepmc":
-        url_search_result = get_europepmc_metadata(url)
-        
+        url_search_result = epmc_url_search(url)
+    if api_name.lower() == "openaire":
+        url_search_result = oa_url_search(url)
+               
 def fulltext_search(search_term,api_name):
     if api_name.lower() == "dimensions":
         api_client = connect_dimensions_api()
         fulltext_result = dimensions_fulltext_search(search_term = search_term,api_client = api_client)        
     if api_name.lower() in ['researchgate','research gate']:
-        fulltext_result = rg_query(search_term = search_term)
-    
-
-
+        fulltext_result = rg_fulltext_search(search_term = search_term)
+    if api_name.lower() == 'openaire':
+        fulltext_result = oa_fulltext_search(search_term = search_term)
