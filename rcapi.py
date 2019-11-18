@@ -84,7 +84,7 @@ def europepmc_title_search (title):
 
 
 
-def get_europepmc_metadata (url):
+def europepmc_url_search (url):
     """
     parse metadata from a Europe PMC web page for a publication
     """
@@ -188,15 +188,17 @@ def connect_ds_api (username, password):
     api_client.set_password(password)
     return api_client
 
-
-def search_title (title, api_client):
+def dimensions_title_search (title, api_client):
     title =  title.replace('"', '\\"')
     query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(title)
     dimensions_return = api_client.execute_query(query_string_IN=query)
 
     try:
         title_return = dimensions_return["publications"]
-
+        try:
+            [p.update({'journal':p['journal']['title']}) for p in title_return]
+        except:
+            pass
         if len(title_return) > 0:
             return title_return
         else:
@@ -206,54 +208,15 @@ def search_title (title, api_client):
         #print("error with title {}".format(title))
 
 
-def run_pub_id_search(dimensions_id,api_client):
-    id_search_string = 'search publications where id = "{}" return publications[all] limit 1'.format(dimensions_id)
-    id_response = api_client.execute_query( query_string_IN=id_search_string )
-    publication_metadata = id_response["publications"][0]
-    return publication_metadata
-
-
-def format_dimensions(dimensions_md):
-    filt_keys = list(set(list(dimensions_md.keys())) & set(["authors", "doi", "linkout", "concepts",  "terms", "journal"]))
-    pubs_dict = {k:dimensions_md[k] for k in filt_keys}
-    pubs_dict["keywords"] = list(set(pubs_dict["terms"] + pubs_dict["concepts"]))
-    pubs_dict["journal_title"] = pubs_dict["journal"]["title"]
-    final_keys = list(set(filt_keys) & set(["authors", "doi", "linkout", "keywords", "journal_title"])) + ["keywords",  "journal_title"]
-    pubs_dict_final = {k:pubs_dict[k] for k in final_keys}
-    return pubs_dict_final
-
-def dimensions_run_exact_string_search(string, api_client):
-    search_string = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal+author_affiliations]'.format(string)
+def dimensions_fulltext_search(search_term,api_client):
+    search_string = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
     api_response = api_client.execute_query(query_string_IN = search_string )
-    return api_response
-
-def dimensions_from_title(title, api_client):
-#     title = pub_entry['title']
-    dimensions_md_all = search_title(title = title,  api_client = api_client)
-    if dimensions_md_all:
-        dimensions_md = dimensions_md_all[0]
-        dimensions_pubs_dict = format_dimensions(dimensions_md)
-        dimensions_pubs_dict.update({'title':title})
-#     pub_entry.update({'dimensions':dimensions_pubs_dict})
-        return dimensions_pubs_dict
-
-def connect_dimensions_api():
-    CONFIG = configparser.ConfigParser()
-    CONFIG.read(CONFIG_FILE)
-    api_client = connect_ds_api(username= CONFIG.get('DEFAULT', 'username'), password = CONFIG.get('DEFAULT', 'password'))
-    return api_client
-
-def dimensions_title_search(title, api_client):
-    pub_dict = dimensions_from_title(title = title, api_client = api_client)
-    return pub_dict
-
-
-def get_dimensions_md(title):
-    api_cnxn = connect_dimensions_api()
-    dimensions_md = dimensions_title_search(title, api_cnxn)
-    return dimensions_md
-
-
+    publication_data = api_response['publications']
+    try:
+        [p.update({'journal':p['journal']['title']}) for p in publication_data]
+    except:
+        pass
+    return publication_data
 
 ###########################################################################################
 ####################################  SSRN   #############################################
@@ -339,6 +302,38 @@ def get_ssrn_md(title):
 ###########################################################################################
 ###############################     openAIRE     ##########################################
 ###########################################################################################
+def oa_fulltext_search(search_term):
+    search_term_format = re.sub(" ","+",search_term)
+    search_url = 'https://explore.openaire.eu/search/find?keyword=%22{}%22'.format(search_term_format)
+    response = requests.get(search_url).text
+    soup = BeautifulSoup(response, "html.parser")
+    titles = soup.find_all("div",  {"class": "uk-h5"})
+    pub_list = []
+    for t in titles:
+        pub_dict = {}
+        title_text = t.text
+        oa_title_return = oa_title_search(title_text)
+        if oa_title_return:
+            pub_list.append(oa_title_return)
+    return pub_list
+
+
+def oa_url_search(url):
+    response = requests.get(url).text
+    soup = BeautifulSoup(response, "html.parser")
+    data = soup.select("[type='application/ld+json']")[0]
+    pub_dict = {'url':url,'title':json.loads(data.text)["name"]}
+    try:
+        if json.loads(data.text)["identifier"]['propertyID'] == 'doi':
+            doi = json.loads(data.text)["identifier"]["value"]
+            pub_dict.update({'doi':json.loads(data.text)["identifier"]["value"]})
+        else:
+            pass
+    except:
+        pass
+    return pub_dict
+
+
 
 def oa_load_uri (uri):
     with urllib.request.urlopen(uri) as response:
@@ -348,7 +343,7 @@ def oa_load_uri (uri):
 
 API_URI = "http://api.openaire.eu/search/publications?title="
 
-def oa_lookup_pub_uris (title):
+def oa_title_search (title):
     xml = oa_load_uri(API_URI + parse.quote(title))
     pub_url = oa_extract_pub_uri(xml)
     journal = oa_extract_journal(xml)
@@ -360,7 +355,6 @@ def oa_lookup_pub_uris (title):
         return oa_dict
     if not pub_url:
         return None
-
 
 
 NS = {
@@ -423,20 +417,25 @@ def oa_extract_journal (xml):
 ############################  Consolidated Functions   ####################################
 ###########################################################################################
 
-
-def full_text_search(search_term, api_name):
-    if api_name.lower() == 'dimensions':
+def url_search(url,api_name):
+    if api_name.lower() == "europepmc":
+        url_search_result = epmc_url_search(url)
+    if api_name.lower() == "openaire":
+        url_search_result = oa_url_search(url)
+               
+def fulltext_search(search_term,api_name):
+    if api_name.lower() == "dimensions":
         api_client = connect_dimensions_api()
-        stringsearch_result =  dimensions_run_exact_string_search(string=search_term, api_client=api_client)
-
-        if stringsearch_result:
-            ss_result = stringsearch_result['publications']
-    return ss_result
-
-
+        fulltext_result = dimensions_fulltext_search(search_term = search_term,api_client = api_client)        
+    if api_name.lower() in ['researchgate','research gate']:
+        fulltext_result = rg_fulltext_search(search_term = search_term)
+    if api_name.lower() == 'openaire':
+        fulltext_result = oa_fulltext_search(search_term = search_term)
+    return fulltext_result
+    
 def title_search(title, api_name):
     if api_name.lower() == 'dimensions':
-        titlesearch_result = get_dimensions_md(title)
+        titlesearch_result = dimensions_title_search(title)
         
     if api_name.lower() == 'ssrn':
         titlesearch_result = search_ssrn(title)
@@ -445,7 +444,7 @@ def title_search(title, api_name):
         titlesearch_result = get_epmc_page(title)
     
     if api_name.lower() == 'openaire':
-        titlesearch_result = oa_lookup_pub_uris(title)
+        titlesearch_result = oa_title_search(title)
         
     return titlesearch_result
 
