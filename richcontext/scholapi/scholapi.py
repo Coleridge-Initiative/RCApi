@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 import configparser
 import json
+import logging
 import re
 import requests
 import sys
@@ -19,9 +20,10 @@ class ScholInfraAPI:
     scholarly infrastructure providers
     """
 
-    def __init__ (self, config_file="rc.cfg"):
+    def __init__ (self, config_file="rc.cfg", logger=None):
         self.config = configparser.ConfigParser()
         self.config.read(config_file)
+        self.logger = logger
 
 
     @classmethod
@@ -70,13 +72,17 @@ class ScholInfraAPI:
         url = ScholInfraAPI.europepmc_get_api_url(title)
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
-        #print(soup.prettify())
+
+        if self.logger:
+            self.logger.debug(soup.prettify())
 
         meta = OrderedDict()
         result_list = soup.find_all("result")
 
         for result in result_list:
-            #print(result)
+            if self.logger:
+                self.logger.debug(result)
+
             result_title = ScholInfraAPI.get_xml_node_value(result, "title")
 
             if ScholInfraAPI.title_match(title, result_title):
@@ -111,7 +117,9 @@ class ScholInfraAPI:
         url = ScholInfraAPI.openaire_get_api_url(title)
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
-        #print(soup.prettify())
+
+        if self.logger:
+            self.logger.debug(soup.prettify())
 
         meta = OrderedDict()
 
@@ -157,7 +165,9 @@ class ScholInfraAPI:
         url = ScholInfraAPI.repec_get_cgi_url(title)
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
-        #print(soup.prettify())
+
+        if self.logger:
+            self.logger.debug(soup.prettify())
 
         ol = soup.find("ol", {"class": "list-group"})
         results = ol.findChildren()
