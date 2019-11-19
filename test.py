@@ -2,7 +2,6 @@
 # encoding: utf-8
 
 from richcontext import scholapi as rc_scholapi
-import time
 import unittest
 
    
@@ -26,40 +25,23 @@ class TestCallAPIs (unittest.TestCase):
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
 
 
-    def test_repec_handle_lookup (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
-
-        t0 = time.time()
-        handle = schol.repec_get_handle(title)
-        t1 = time.time()
-
-        print("\ntime: {:.3f} ms - RePEc".format((t1 - t0) * 1000.0))
-        self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
-
-
     def test_semantic_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1016/j.appet.2017.07.006"
 
-        t0 = time.time()
-        meta = schol.semantic_publication_lookup(doi)
-        t1 = time.time()
+        meta = schol.semantic.publication_lookup(doi)
 
-        print("\ntime: {:.3f} ms - Semantic Scholar".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - {}".format(schol.semantic.elapsed_time, schol.semantic.name))
         self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
 
 
     def test_unpaywall_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1016/j.appet.2017.07.006"
-        email = "info@derwen.ai"
 
-        t0 = time.time()
-        meta = schol.unpaywall_publication_lookup(doi, email)
-        t1 = time.time()
+        meta = schol.unpaywall.publication_lookup(doi)
 
-        print("\ntime: {:.3f} ms - Unpaywall".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - {}".format(schol.unpaywall.elapsed_time, schol.unpaywall.name))
         self.assertTrue(meta["doi_url"] == "https://doi.org/10.1016/j.appet.2017.07.006")
 
 
@@ -67,12 +49,20 @@ class TestCallAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1016/j.appet.2017.07.006"
 
-        t0 = time.time()
-        meta = schol.dissemin_publication_lookup(doi)
-        t1 = time.time()
+        meta = schol.dissemin.publication_lookup(doi)
 
-        print("\ntime: {:.3f} ms - dissemin".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - {}".format(schol.dissemin.elapsed_time, schol.dissemin.name))
         self.assertTrue(meta["paper"]["date"] == "2017-10-01")
+
+
+    def test_repec_handle_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
+
+        handle = schol.repec.get_handle(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.repec.elapsed_time, schol.repec.name))
+        self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
 
 
 if __name__ == "__main__":

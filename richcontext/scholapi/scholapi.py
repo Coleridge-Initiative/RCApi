@@ -19,10 +19,11 @@ class ScholInfra:
     methods for accessing a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self, parent=None, name="Generic", api_url=None):
+    def __init__ (self, parent=None, name="Generic", api_url=None, cgi_url=None):
         self.parent = parent
         self.name = name
         self.api_url = api_url
+        self.cgi_url = cgi_url
         self.elapsed_time = 0.0
 
 
@@ -49,11 +50,11 @@ class ScholInfra:
         return self.clean_title(title0) == self.clean_title(title1)
 
 
-    def get_api_url (self, id_tuple):
+    def get_api_url (self, *args):
         """
         construct a URL to query the API
         """
-        return self.api_url.format(id_tuple)
+        return self.api_url.format(*args)
 
 
 class ScholInfra_EuropePMC (ScholInfra):
@@ -69,7 +70,7 @@ class ScholInfra_EuropePMC (ScholInfra):
         """
         t0 = time.time()
 
-        url = self.get_api_url((urllib.parse.quote(title)))
+        url = self.get_api_url(urllib.parse.quote(title))
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
 
@@ -111,7 +112,7 @@ class ScholInfra_OpenAIRE (ScholInfra):
         """
         t0 = time.time()
 
-        url = self.get_api_url((urllib.parse.quote(title)))
+        url = self.get_api_url(urllib.parse.quote(title))
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
 
@@ -133,6 +134,140 @@ class ScholInfra_OpenAIRE (ScholInfra):
         self.elapsed_time = (t1 - t0) * 1000.0
 
         return meta
+
+
+class ScholInfra_SemanticScholar (ScholInfra):
+    """
+    http://api.semanticscholar.org/
+    """
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from a Semantic Scholar API query
+        """
+        t0 = time.time()
+
+        url = self.get_api_url(identifier)
+        meta = json.loads(requests.get(url).text)
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
+class ScholInfra_Unpaywall (ScholInfra):
+    """
+    https://unpaywall.org/products/api
+    """
+
+    def publication_lookup (self, identifier):
+        """
+        construct a URL to query the API for Unpaywall
+        """
+        t0 = time.time()
+
+        email = self.parent.config["DEFAULT"]["email"]
+
+        url = self.get_api_url(identifier, email)
+        meta = json.loads(requests.get(url).text)
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
+class ScholInfra_dissemin (ScholInfra):
+    """
+    https://dissemin.readthedocs.io/en/latest/api.html
+    """
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from a dissemin API query
+        """
+        t0 = time.time()
+
+        url = self.get_api_url(identifier)
+        meta = json.loads(requests.get(url).text)
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
+class ScholInfra_RePEc (ScholInfra):
+    """
+    https://ideas.repec.org/api.html
+    """
+
+    def get_cgi_url (self, title):
+        """
+        construct a URL to query the CGI for RePEc
+        """
+        enc_title = urllib.parse.quote_plus(title.replace("(", "").replace(")", "").replace(":", ""))
+        return self.cgi_url.format(enc_title)
+
+
+    def get_handle (self, title):
+        """
+        to use the RePEc API, first obtain a handle for a publication
+        """
+        t0 = time.time()
+
+        url = self.get_cgi_url(title)
+        response = requests.get(url).text
+        soup = BeautifulSoup(response,  "html.parser")
+
+        if self.parent.logger:
+            self.parent.logger.debug(soup.prettify())
+
+        ol = soup.find("ol", {"class": "list-group"})
+        results = ol.findChildren()
+
+        if len(results) > 0:
+            li = results[0]
+
+            if self.parent.logger:
+                self.parent.logger.debug(li)
+
+            # TODO: can we perform a title search here?
+
+            handle = li.find("i").get_text()
+
+            t1 = time.time()
+            self.elapsed_time = (t1 - t0) * 1000.0
+
+            return handle
+
+        # otherwise...
+        self.elapsed_time = 0.0
+        return None
+
+
+    def get_meta (self, handle):
+        """
+        pull RePEc metadata based on the handle
+        """
+        try:
+            t0 = time.time()
+
+            token = self.parent.config["DEFAULT"]["repec_token"]
+            url = self.get_api_url(token, handle)
+            meta = json.loads(requests.get(url).text)
+
+            t1 = time.time()
+            self.elapsed_time = (t1 - t0) * 1000.0
+
+            return meta
+
+        except:
+            self.elapsed_time = 0.0
+            print(traceback.format_exc())
+            print("ERROR: {}".format(handle))
+            return None
 
 
 ######################################################################
@@ -161,158 +296,30 @@ class ScholInfraAPI:
             api_url="http://api.openaire.eu/search/publications?title={}"
             )
 
+        self.semantic = ScholInfra_SemanticScholar(
+            parent=self,
+            name="Semantic Scholar",
+            api_url = "http://api.semanticscholar.org/v1/paper/{}"
+            )
 
-    @classmethod
-    def get_xml_node_value (cls, root, name):
-        """
-        return the named value from an XML node, if it exists
-        """
-        node = root.find(name)
-        return (node.text if node else None)
+        self.unpaywall = ScholInfra_Unpaywall(
+            parent=self,
+            name="Unpaywall",
+            api_url = "https://api.unpaywall.org/v2/{}?email={}"
+            )
 
+        self.dissemin = ScholInfra_dissemin(
+            parent=self,
+            name="dissemin",
+            api_url = "https://dissem.in/api/{}"
+            )
 
-    @classmethod
-    def clean_title (cls, title):
-        """
-        minimal set of string transformations so that a title can be
-        compared consistently across API providers
-        """
-        return re.sub("\s+", " ", title.strip(" \"'?!.,")).lower()
-
-
-    @classmethod
-    def title_match (cls, title0, title1):
-        """
-        within reason, do the two titles match?
-        """
-        return cls.clean_title(title0) == cls.clean_title(title1)
-
-
-    ######################################################################
-    ## RePEc API
-
-    REPEC_CGI_URL = "https://ideas.repec.org/cgi-bin/htsearch?q={}"
-    REPEC_API_URL = "https://api.repec.org/call.cgi?code={}&getref={}"
-
-    @classmethod
-    def repec_get_cgi_url (cls, title):
-        """
-        construct a URL to query the CGI for RePEc
-        """
-        enc_title = urllib.parse.quote_plus(title.replace("(", "").replace(")", "").replace(":", ""))
-        return cls.REPEC_CGI_URL.format(enc_title)
-
-
-    @classmethod
-    def repec_get_api_url (cls, handle, token):
-        """
-        construct a URL to query the API for RePEc
-        """
-        return cls.REPEC_API_URL.format(token, handle)
-
-
-    def repec_get_handle (self, title):
-        """
-        to use the RePEc API, first obtain a handle for a publication
-        """
-        url = ScholInfraAPI.repec_get_cgi_url(title)
-        response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
-
-        if self.logger:
-            self.logger.debug(soup.prettify())
-
-        ol = soup.find("ol", {"class": "list-group"})
-        results = ol.findChildren()
-
-        if len(results) > 0:
-            li = results[0]
-            handle = li.find("i").get_text()
-            return handle
-        else:
-            return None
-
-
-    def repec_get_meta (self, token, handle):
-        """
-        pull RePEc metadata based on the handle
-        """
-        try:
-            url = ScholInfraAPI.repec_get_api_url(token, handle)
-            response = requests.get(url).text
-            meta = json.loads(response)
-            return meta
-
-        except:
-            print(traceback.format_exc())
-            print("ERROR: {}".format(handle))
-            return None
-
-
-    ######################################################################
-    ## Semantic Scholar API
-
-    SEMANTIC_API_URL = "http://api.semanticscholar.org/v1/paper/{}"
-
-    @classmethod
-    def semantic_get_api_url (cls, identifier):
-        """
-        construct a URL to query the API for Semantic Scholar
-        """
-        return cls.SEMANTIC_API_URL.format(identifier)
-
-
-    def semantic_publication_lookup (self, identifier):
-        """
-        parse metadata returned from a Semantic Scholar API query
-        """
-        url = ScholInfraAPI.semantic_get_api_url(identifier)
-        meta = requests.get(url).text
-        return json.loads(meta)
-
-
-    ######################################################################
-    ## Unpaywall API
-
-    UNPAYWALL_API_URL = "https://api.unpaywall.org/v2/{}?email={}"
-
-    @classmethod
-    def unpaywall_get_api_url (cls, doi, email):
-        """
-        construct a URL to query the API for Unpaywall
-        """
-        return cls.UNPAYWALL_API_URL.format(doi, email)
-
-
-    def unpaywall_publication_lookup (self, doi, email):
-        """
-        parse metadata returned from an Unpaywall API query
-        """
-        url = ScholInfraAPI.unpaywall_get_api_url(doi, email)
-        meta = requests.get(url).text
-        return json.loads(meta)
-
-
-    ######################################################################
-    ## dissemin API
-
-    DISSEMIN_API_URL = "https://dissem.in/api/{}"
-
-    @classmethod
-    def dissemin_get_api_url (cls, doi):
-        """
-        construct a URL to query the dissemin API
-        """
-        return cls.DISSEMIN_API_URL.format(doi)
-
-
-    def dissemin_publication_lookup (self, doi):
-        """
-        parse metadata returned from a dissemin API query
-        """
-        url = ScholInfraAPI.dissemin_get_api_url(doi)
-        meta = requests.get(url).text
-        return json.loads(meta)
+        self.repec = ScholInfra_RePEc(
+            parent=self,
+            name="RePEc",
+            api_url = "https://api.repec.org/call.cgi?code={}&getref={}",
+            cgi_url = "https://ideas.repec.org/cgi-bin/htsearch?q={}"
+            )
 
 
 ######################################################################

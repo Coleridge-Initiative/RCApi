@@ -37,12 +37,12 @@ to enable use of Selenium.
 
 APIs used to retrieve metadata:
 
-  * [RePEc](https://ideas.repec.org/api.html)
   * [OpenAIRE](https://develop.openaire.eu/)
   * [EuropePMC](https://europepmc.org/RestfulWebService)
   * [Semantic Scholar](http://api.semanticscholar.org/)
   * [Unpaywall](https://unpaywall.org/products/api)
   * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
+  * [RePEc](https://ideas.repec.org/api.html)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
 
 
