@@ -11,11 +11,9 @@ class TestCallAPIs (unittest.TestCase):
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
-        t0 = time.time()
-        meta = schol.europepmc_title_search(title)
-        t1 = time.time()
+        meta = schol.europepmc.title_search(title)
 
-        print(" time: {:.3f} ms - EuropePMC".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
         self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.appet.2017.07.006'), ('pmcid', 'PMC5574185'), ('journal', 'Appetite'), ('authors', ['Taillie LS', 'Ng SW', 'Xue Y', 'Harding M.']), ('pdf', 'http://europepmc.org/articles/PMC5574185?pdf=render')])")
 
 
@@ -26,7 +24,7 @@ class TestCallAPIs (unittest.TestCase):
         meta = schol.openaire_title_search(title)
         t1 = time.time()
 
-        print(" time: {:.3f} ms - OpenAIRE".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - OpenAIRE".format((t1 - t0) * 1000.0))
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
 
 
@@ -38,7 +36,7 @@ class TestCallAPIs (unittest.TestCase):
         handle = schol.repec_get_handle(title)
         t1 = time.time()
 
-        print(" time: {:.3f} ms - RePEc".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - RePEc".format((t1 - t0) * 1000.0))
         self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
 
 
@@ -50,7 +48,7 @@ class TestCallAPIs (unittest.TestCase):
         meta = schol.semantic_publication_lookup(doi)
         t1 = time.time()
 
-        print(" time: {:.3f} ms - Semantic Scholar".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - Semantic Scholar".format((t1 - t0) * 1000.0))
         self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
 
 
@@ -63,7 +61,7 @@ class TestCallAPIs (unittest.TestCase):
         meta = schol.unpaywall_publication_lookup(doi, email)
         t1 = time.time()
 
-        print(" time: {:.3f} ms - Unpaywall".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - Unpaywall".format((t1 - t0) * 1000.0))
         self.assertTrue(meta["doi_url"] == "https://doi.org/10.1016/j.appet.2017.07.006")
 
 
@@ -75,7 +73,7 @@ class TestCallAPIs (unittest.TestCase):
         meta = schol.dissemin_publication_lookup(doi)
         t1 = time.time()
 
-        print(" time: {:.3f} ms - dissemin".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - dissemin".format((t1 - t0) * 1000.0))
         self.assertTrue(meta["paper"]["date"] == "2017-10-01")
 
 

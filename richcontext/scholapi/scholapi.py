@@ -14,6 +14,95 @@ import traceback
 import urllib.parse
 
 
+class ScholInfra:
+    """
+    methods for accessing a specific Scholarly Infrastructure API
+    """
+
+    def __init__ (self, parent=None, name="Generic", api_url=None):
+        self.parent = parent
+        self.name = name
+        self.api_url = api_url
+        self.elapsed_time = 0.0
+
+
+    def get_xml_node_value (self, root, name):
+        """
+        return the named value from an XML node, if it exists
+        """
+        node = root.find(name)
+        return (node.text if node else None)
+
+
+    def clean_title (self, title):
+        """
+        minimal set of string transformations so that a title can be
+        compared consistently across API providers
+        """
+        return re.sub("\s+", " ", title.strip(" \"'?!.,")).lower()
+
+
+    def title_match (self, title0, title1):
+        """
+        within reason, do the two titles match?
+        """
+        return self.clean_title(title0) == self.clean_title(title1)
+
+
+    def get_api_url (self, id_tuple):
+        """
+        construct a URL to query the API
+        """
+        return self.api_url.format(id_tuple)
+
+
+class ScholInfra_EuropePMC (ScholInfra):
+    """
+    https://europepmc.org/RestfulWebService
+    """
+
+    #super().__init__(name, attitude, behaviour, face)
+
+    def title_search (self, title):
+        """
+        parse metadata from XML returned from the EuropePMC API query
+        """
+        t0 = time.time()
+
+        url = self.get_api_url((urllib.parse.quote(title)))
+        response = requests.get(url).text
+        soup = BeautifulSoup(response,  "html.parser")
+
+        if self.parent.logger:
+            self.parent.logger.debug(soup.prettify())
+
+        meta = OrderedDict()
+        result_list = soup.find_all("result")
+
+        for result in result_list:
+            if self.parent.logger:
+                self.parent.logger.debug(result)
+
+            result_title = self.get_xml_node_value(result, "title")
+
+            if self.title_match(title, result_title):
+                meta["doi"] = self.get_xml_node_value(result, "doi")
+                meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
+                meta["journal"] = self.get_xml_node_value(result, "journaltitle")
+                meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+
+                if self.get_xml_node_value(result, "haspdf") == "Y":
+                    meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
+######################################################################
+## federated API access
+
 class ScholInfraAPI:
     """
     API integrations for federating metadata lookup across multiple
@@ -24,6 +113,14 @@ class ScholInfraAPI:
         self.config = configparser.ConfigParser()
         self.config.read(config_file)
         self.logger = logger
+
+        self.europepmc = ScholInfra_EuropePMC(
+            parent=self,
+            name="EuropePMC",
+            api_url="https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
+            )
+
+
 
 
     @classmethod
@@ -50,51 +147,6 @@ class ScholInfraAPI:
         within reason, do the two titles match?
         """
         return cls.clean_title(title0) == cls.clean_title(title1)
-
-
-    ######################################################################
-    ## EuropePMC
-
-    EUROPEPMC_API_URL = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
-
-    @classmethod
-    def europepmc_get_api_url (cls, title):
-        """
-        construct a URL to query the API for EuropePMC
-        """
-        return cls.EUROPEPMC_API_URL.format(urllib.parse.quote(title))
-
-
-    def europepmc_title_search (self, title):
-        """
-        parse metadata from XML returned from the EuropePMC API query
-        """
-        url = ScholInfraAPI.europepmc_get_api_url(title)
-        response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
-
-        if self.logger:
-            self.logger.debug(soup.prettify())
-
-        meta = OrderedDict()
-        result_list = soup.find_all("result")
-
-        for result in result_list:
-            if self.logger:
-                self.logger.debug(result)
-
-            result_title = ScholInfraAPI.get_xml_node_value(result, "title")
-
-            if ScholInfraAPI.title_match(title, result_title):
-                meta["doi"] = ScholInfraAPI.get_xml_node_value(result, "doi")
-                meta["pmcid"] = ScholInfraAPI.get_xml_node_value(result, "pmcid")
-                meta["journal"] = ScholInfraAPI.get_xml_node_value(result, "journaltitle")
-                meta["authors"] = ScholInfraAPI.get_xml_node_value(result, "authorstring").split(", ")
-
-                if ScholInfraAPI.get_xml_node_value(result, "haspdf") == "Y":
-                    meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
-
-        return meta
 
 
     ######################################################################
