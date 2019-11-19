@@ -20,11 +20,9 @@ class TestCallAPIs (unittest.TestCase):
     def test_openaire_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
-        t0 = time.time()
-        meta = schol.openaire_title_search(title)
-        t1 = time.time()
+        meta = schol.openaire.title_search(title)
 
-        print("\ntime: {:.3f} ms - OpenAIRE".format((t1 - t0) * 1000.0))
+        print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
 
 

@@ -25,8 +25,8 @@ if __name__ == "__main__":
     doi = "10.1016/j.appet.2017.07.006"
 
     # run it...
-    meta = schol.europepmc.title_search(title)
+    meta = schol.openaire.title_search(title)
 
     # report results
     pprint.pprint(meta)
-    print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
+    print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))

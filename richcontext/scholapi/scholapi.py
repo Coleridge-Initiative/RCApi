@@ -100,6 +100,41 @@ class ScholInfra_EuropePMC (ScholInfra):
         return meta
 
 
+class ScholInfra_OpenAIRE (ScholInfra):
+    """
+    https://develop.openaire.eu/
+    """
+
+    def title_search (self, title):
+        """
+        parse metadata from XML returned from the OpenAIRE API query
+        """
+        t0 = time.time()
+
+        url = self.get_api_url((urllib.parse.quote(title)))
+        response = requests.get(url).text
+        soup = BeautifulSoup(response,  "html.parser")
+
+        if self.parent.logger:
+            self.parent.logger.debug(soup.prettify())
+
+        meta = OrderedDict()
+
+        for result in soup.find_all("oaf:result"):
+            result_title = self.get_xml_node_value(result, "title")
+
+            if self.title_match(title, result_title):
+                meta["url"] = self.get_xml_node_value(result, "url")
+                meta["authors"] = [a.text for a in result.find_all("creator")]
+                meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+                break
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
 ######################################################################
 ## federated API access
 
@@ -120,7 +155,11 @@ class ScholInfraAPI:
             api_url="https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
             )
 
-
+        self.openaire = ScholInfra_OpenAIRE(
+            parent=self,
+            name="OpenAIRE",
+            api_url="http://api.openaire.eu/search/publications?title={}"
+            )
 
 
     @classmethod
@@ -147,44 +186,6 @@ class ScholInfraAPI:
         within reason, do the two titles match?
         """
         return cls.clean_title(title0) == cls.clean_title(title1)
-
-
-    ######################################################################
-    ## openAIRE
-
-    OPENAIRE_API_URL = "http://api.openaire.eu/search/publications?title={}"
-
-    @classmethod
-    def openaire_get_api_url (cls, title):
-        """
-        construct a URL to query the API for OpenAIRE
-        """
-        return cls.OPENAIRE_API_URL.format(urllib.parse.quote(title))
-
-
-    def openaire_title_search (self, title):
-        """
-        parse metadata from XML returned from the OpenAIRE API query
-        """
-        url = ScholInfraAPI.openaire_get_api_url(title)
-        response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
-
-        if self.logger:
-            self.logger.debug(soup.prettify())
-
-        meta = OrderedDict()
-
-        for result in soup.find_all("oaf:result"):
-            result_title = ScholInfraAPI.get_xml_node_value(result, "title")
-
-            if ScholInfraAPI.title_match(title, result_title):
-                meta["url"] = ScholInfraAPI.get_xml_node_value(result, "url")
-                meta["authors"] = [a.text for a in result.find_all("creator")]
-                meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
-                break
-
-        return meta
 
 
     ######################################################################
