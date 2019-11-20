@@ -204,6 +204,20 @@ class ScholInfra_Dimensions (ScholInfra):
     https://docs.dimensions.ai/dsl/
     """
 
+    def run_query (self, query):
+        """
+        run one Dimensions API query through their 'DSL'
+        """
+        dimcli.login(
+            username=self.parent.config["DEFAULT"]["email"],
+            password=self.parent.config["DEFAULT"]["dimensions_password"]
+            )
+
+        dsl = dimcli.Dsl(verbose=False)
+
+        return dsl.query(query)
+
+
     def title_search (self, title):
         """
         parse metadata from a Dimensions API query
@@ -213,13 +227,7 @@ class ScholInfra_Dimensions (ScholInfra):
         enc_title = title.replace('"', '\\"')
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
-        dimcli.login(
-            username=self.parent.config["DEFAULT"]["email"],
-            password=self.parent.config["DEFAULT"]["dimensions_password"]
-            )
-
-        dsl = dimcli.Dsl(verbose=False)
-        response = dsl.query(query)
+        response = self.run_query(query)
 
         for meta in response.publications:
             result_title = meta["title"]
@@ -234,6 +242,21 @@ class ScholInfra_Dimensions (ScholInfra):
                 return meta
 
         return None
+
+
+    def full_text_search (self, search_term):
+        """
+        parse metadata from a Dimensions API full-text search
+        """
+        t0 = time.time()
+
+        query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
+        response = self.run_query(query)
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return response.publications
 
 
 class ScholInfra_RePEc (ScholInfra):

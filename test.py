@@ -64,6 +64,21 @@ class TestCallAPIs (unittest.TestCase):
         self.assertTrue(meta["doi"] == "10.1016/j.appet.2017.07.006")
 
 
+    def test_dimensions_full_text_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "deal or no deal?"
+        pub_list = schol.dimensions.full_text_search(search_term)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.dimensions.elapsed_time, schol.dimensions.name))
+
+        for pub in pub_list:
+            if pub["doi"] == "10.1016/j.appet.2019.104481":
+                self.assertTrue(pub["journal"]["title"] == "Appetite")
+                return
+
+        self.assertTrue("DOI not found" == "")
+
+
     def test_repec_handle_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"

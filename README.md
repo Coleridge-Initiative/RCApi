@@ -42,8 +42,8 @@ APIs used to retrieve metadata:
   * [Semantic Scholar](http://api.semanticscholar.org/)
   * [Unpaywall](https://unpaywall.org/products/api)
   * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
-  * [RePEc](https://ideas.repec.org/api.html)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
+  * [RePEc](https://ideas.repec.org/api.html)
 
 
 See `enrich_pubs.ipynb` for example API usage to pull federated
