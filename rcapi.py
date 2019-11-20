@@ -10,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from urllib import parse
 import configparser
-import dimensions_search_api_client as dscli
 import json
 import re
 import requests
@@ -179,19 +178,39 @@ def get_epmc_md (title):
 ###########################################################################################
 ## Dimensions API
 
-def connect_ds_api (username, password):
-    api_client = dscli.DimensionsSearchAPIClient()
-    api_client.set_max_in_items(100)
-    api_client.set_max_return(1000)
-    api_client.set_max_overall_returns(50000)
-    api_client.set_username(username)
-    api_client.set_password(password)
-    return api_client
 
-def dimensions_title_search (title, api_client):
+def gen_dimensions_token():
+#     CONFIG_FILE = "rc.cfg"
+    CONFIG = configparser.ConfigParser()
+    CONFIG.read(CONFIG_FILE)
+    username = CONFIG.get('DEFAULT',  'username')
+    password = CONFIG.get('DEFAULT',  'password')
+    login = {
+    'username': username,
+    'password': password
+    }
+    resp = requests.post('https://app.dimensions.ai/api/auth.json', json=login)
+    if resp.raise_for_status() is not None:
+        print('Check credentials or permissions.')
+    header = {
+    'Authorization': "JWT " + resp.json()['token']}
+    return header
+        
+    
+def run_dimensions_query(query):
+    header = gen_dimensions_token()
+    resp = requests.post(
+    'https://app.dimensions.ai/api/dsl.json',
+    data= query.encode(),
+    headers=header)
+
+    response = resp.json()
+    return response
+    
+def dimensions_title_search (title):
     title =  title.replace('"', '\\"')
-    query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(title)
-    dimensions_return = api_client.execute_query(query_string_IN=query)
+    title_query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(title)
+    dimensions_return = run_dimensions_query(query=title_query)
 
     try:
         title_return = dimensions_return["publications"]
@@ -208,9 +227,9 @@ def dimensions_title_search (title, api_client):
         #print("error with title {}".format(title))
 
 
-def dimensions_fulltext_search(search_term,api_client):
+def dimensions_fulltext_search(search_term):
     search_string = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
-    api_response = api_client.execute_query(query_string_IN = search_string )
+    api_response = run_dimensions_query(query = search_string )
     publication_data = api_response['publications']
     try:
         [p.update({'journal':p['journal']['title']}) for p in publication_data]
