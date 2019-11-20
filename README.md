@@ -46,8 +46,8 @@ APIs used to retrieve metadata:
   * [RePEc](https://ideas.repec.org/api.html)
 
 
-See `enrich_pubs.ipynb` for example API usage to pull federated
-metadata for a publication.
+See `docs/enrich_pubs.ipynb` for example API usage to pull the
+federated metadata for a publication.
 
 For more background about *open access publications* see:
 
@@ -55,3 +55,18 @@ For more background about *open access publications* see:
 The State of OA: A large-scale analysis of the prevalence and impact of Open Access articles  
 *PeerJ Preprints* 5:e3119v1  
 <https://doi.org/10.7287/peerj.preprints.3119v1>
+
+
+## Testing
+
+To run unit tests for the APIs which do not require credentials:
+
+```
+python test.py
+```
+
+To run unit tests for all of the APIs:
+
+```
+python full_test.py
+```
