@@ -223,7 +223,11 @@ class DimensionsSearchAPIClient( object ):
     
     #-- END method create_login_json() --#
 
+    def testing(self):
+        api_url = self.get_search_api_url()
+        return api_url
 
+        
     def execute_query( self, query_string_IN, api_url_IN = None ):
         
         # return reference
