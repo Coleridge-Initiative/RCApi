@@ -55,6 +55,15 @@ class TestCallAPIs (unittest.TestCase):
         self.assertTrue(meta["paper"]["date"] == "2017-10-01")
 
 
+    def test_dimensions_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+        meta = schol.dimensions.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.dimensions.elapsed_time, schol.dimensions.name))
+        self.assertTrue(meta["doi"] == "10.1016/j.appet.2017.07.006")
+
+
     def test_repec_handle_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"

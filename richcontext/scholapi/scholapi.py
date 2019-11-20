@@ -4,6 +4,7 @@
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 import configparser
+import dimcli
 import json
 import logging
 import re
@@ -198,6 +199,43 @@ class ScholInfra_dissemin (ScholInfra):
         return meta
 
 
+class ScholInfra_Dimensions (ScholInfra):
+    """
+    https://docs.dimensions.ai/dsl/
+    """
+
+    def title_search (self, title):
+        """
+        parse metadata from a Dimensions API query
+        """
+        t0 = time.time()
+
+        enc_title = title.replace('"', '\\"')
+        query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
+
+        dimcli.login(
+            username=self.parent.config["DEFAULT"]["email"],
+            password=self.parent.config["DEFAULT"]["dimensions_password"]
+            )
+
+        dsl = dimcli.Dsl(verbose=False)
+        response = dsl.query(query)
+
+        for meta in response.publications:
+            result_title = meta["title"]
+
+            if self.title_match(title, result_title):
+                if self.parent.logger:
+                    self.parent.logger.debug(meta)
+
+                t1 = time.time()
+                self.elapsed_time = (t1 - t0) * 1000.0
+
+                return meta
+
+        return None
+
+
 class ScholInfra_RePEc (ScholInfra):
     """
     https://ideas.repec.org/api.html
@@ -312,6 +350,11 @@ class ScholInfraAPI:
             parent=self,
             name="dissemin",
             api_url = "https://dissem.in/api/{}"
+            )
+
+        self.dimensions = ScholInfra_Dimensions(
+            parent=self,
+            name="Dimensions",
             )
 
         self.repec = ScholInfra_RePEc(
