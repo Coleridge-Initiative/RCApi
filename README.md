@@ -70,3 +70,11 @@ To run unit tests for all of the APIs:
 ```
 python full_test.py
 ```
+
+
+## To Do
+
+ * Dimensions datasets
+ * SSRN
+ * Springer (https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
+ * https://paperswithcode.com/?ref=semscholar
