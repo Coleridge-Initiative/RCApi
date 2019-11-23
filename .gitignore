@@ -1,13 +1,23 @@
+# RichContext configuration -- do not commit these
 rc.cfg
 chromedriver
 chromedriver.exe
 
-.ipynb_checkpoints
+# Python compiled modules
+*.pyc
+__pycache__
+
+# Setuptools distribution folder
+/dist/
+/build/
+
+# Python egg metadata, regenerated from source files by setuptools
+/*.egg-info
+/*.egg
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# editor junk
 .DS_Store
 **~
-
-dist
-build
-__pycache__
-*.pyc
-*.egg-info

@@ -1,0 +1,5 @@
+include LICENSE
+include README.md
+include changelog.txt
+include example.py
+include rc_template.cfg
