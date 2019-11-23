@@ -8,4 +8,4 @@
 
   * first release on PyPi
   * supports `title_search()` and `publication_lookup()` using several discovery APIs for Scholarly Infrastructure
-  * aligned with Community session goals from 2019 Rich Context Workshop (notes by Sameul Klein)
+  * aligned with Community session goals from 2019 Rich Context Workshop (notes by Samuel Klein)
