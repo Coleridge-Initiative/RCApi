@@ -133,4 +133,7 @@ Contributors:
 [@ceteri](https://github.com/ceteri), 
 [@srand525](https://github.com/srand525), 
 plus many thanks for the inspiring *2019 Rich Context Workshop* notes by 
-[@metasj](https://github.com/metasj).
+[@metasj](https://github.com/metasj),
+and guidance from
+[@claytonrsh](https://github.com/claytonrsh),
+[@IanMulvany](https://github.com/IanMulvany).
