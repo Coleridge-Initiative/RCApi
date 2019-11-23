@@ -74,16 +74,8 @@ python full_test.py
 
 ## To Do
 
-
  * Dimensions datasets
  * SSRN
- * Springer (https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
+ * Springer <https://github.com/srand525/search_springer/blob/master/SpringerFetch.py>
  * https://paperswithcode.com/?ref=semscholar
-=======
-#### To Do
-##### Add Apis:
-* PMC/Pubmed
-* RePEc
-* Springer (https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
-* https://paperswithcode.com/?ref=semscholar
-
+ * scrape metadata from web pages PMC/Pubmed, NIH, etc.
