@@ -1,21 +1,46 @@
-# RCApi
+# richcontext.scholapi
 
-API integrations for federating metadata lookup across multiple
-scholarly infrastructure providers.
+[Rich Context](https://coleridgeinitiative.org/richcontext)
+API integrations for federating metadata discovery and exchange across
+multiple scholarly infrastructure providers.
 
-For the development of the Rich Context knowledge graph this library
-is used to identify:
+Development of the Rich Context knowledge graph uses this library to:
 
-  * dataset links to research
-  * locating open access publications
-  * reconciling author profiles
-  * reconciling keyword mesh
+  * identify dataset links to research publications
+  * locate open access publications
+  * reconcile author profiles
+  * reconcile keyword mesh
+
+This library has been guided by collaborative work on community
+building and metadata exchange to improve Scholarly Infrastructure,
+held at the *2019 Rich Context Workshop*.
 
 
 ## Installation
 
-Copy the configuration file template `rc_template.cfg` to `rc.cfg`
-then populate it with your credentials.
+Prerequisites:
+
+- [Python 3.x](https://www.python.org/downloads/)
+- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- [Dimensions CLI](https://github.com/digital-science/dimcli)
+- [Requests](https://2.python-requests.org/en/master/)
+- [Selenium](https://github.com/SeleniumHQ/selenium/)
+
+To install from [PyPi](https://pypi.python.org/pypi/richcontext.scholapi):
+
+```
+pip install richcontext.scholapi
+```
+
+If you install directly from this Git repo, be sure to install the 
+dependencies as well:
+
+```
+pip install -r requirements.txt
+```
+
+Then copy the configuration file template `rc_template.cfg` to `rc.cfg`
+and populate it with your credentials.
 
 NB: be careful not to commit the `rc.cfg` file in Git since it
 contains sensitive data such as passwords.
@@ -31,6 +56,27 @@ Parameters needed in the configuration file include:
 
 Download the [Chrome webdriver](https://chromedriver.chromium.org/downloads) 
 to enable use of Selenium.
+
+
+## Usage
+
+```
+from richcontext import scholapi as rc_scholapi
+import pprint
+
+# initialize the federated API access
+schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
+
+# search parameters for example publications
+title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+
+# run it...
+meta = schol.openaire.title_search(title)
+
+# report results
+pprint.pprint(meta)
+print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
+```
 
 
 ## API Integrations
@@ -62,11 +108,32 @@ The State of OA: A large-scale analysis of the prevalence and impact of Open Acc
 To run unit tests for the APIs which do not require credentials:
 
 ```
-python test.py
+python test/test.py
 ```
 
 To run unit tests for all of the APIs:
 
 ```
-python full_test.py
+python test/full_test.py
 ```
+
+
+## To Do
+
+ * Dimensions API for dataset metadata
+ * scrape metadata from web pages PMC/Pubmed, NIH, etc.
+ * SSRN
+ * https://paperswithcode.com/?ref=semscholar
+ * Springer <https://github.com/srand525/search_springer/blob/master/SpringerFetch.py>
+
+
+## Kudos
+
+Contributors:
+[@ceteri](https://github.com/ceteri), 
+[@srand525](https://github.com/srand525), 
+plus many thanks for the inspiring *2019 Rich Context Workshop* notes by 
+[@metasj](https://github.com/metasj),
+and guidance from
+[@claytonrsh](https://github.com/claytonrsh),
+[@IanMulvany](https://github.com/IanMulvany).
