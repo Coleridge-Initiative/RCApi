@@ -115,6 +115,7 @@ Then run unit tests for the APIs which do not require credentials:
 
 ```
 nose2 -v --pretty-assert
+```
 
 
 ## To Do
