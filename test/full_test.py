@@ -32,15 +32,5 @@ class TestAllAPIs (TestOpenAPIs):
         self.assertTrue("DOI not found" == "")
 
 
-    def test_repec_handle_lookup (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
-
-        handle = schol.repec.get_handle(title)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.repec.elapsed_time, schol.repec.name))
-        self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
-
-
 if __name__ == "__main__":
     unittest.main()
