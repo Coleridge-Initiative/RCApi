@@ -35,6 +35,16 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
 
 
+    def test_ssrn_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.2139/ssrn.2898991"
+
+        meta = schol.ssrn.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.ssrn.elapsed_time, schol.ssrn.name))
+        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])")
+
+
     def test_unpaywall_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1016/j.appet.2017.07.006"
@@ -53,6 +63,16 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.dissemin.elapsed_time, schol.dissemin.name))
         self.assertTrue(meta["paper"]["date"] == "2017-10-01")
+
+
+    def test_repec_handle_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Estimating the 'True' Cost of Job Loss: Evidence Using Matched Data from California 1991-2000"
+
+        handle = schol.repec.get_handle(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.repec.elapsed_time, schol.repec.name))
+        self.assertTrue(handle == "RePEc:cen:wpaper:09-14")
 
 
 if __name__ == "__main__":

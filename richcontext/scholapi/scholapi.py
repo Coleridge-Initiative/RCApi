@@ -63,8 +63,6 @@ class ScholInfra_EuropePMC (ScholInfra):
     https://europepmc.org/RestfulWebService
     """
 
-    #super().__init__(name, attitude, behaviour, face)
-
     def title_search (self, title):
         """
         parse metadata from XML returned from the EuropePMC API query
@@ -331,6 +329,44 @@ class ScholInfra_RePEc (ScholInfra):
             return None
 
 
+class ScholInfra_SSRN (ScholInfra):
+    """
+    https://www.ssrn.com/index.cfm/en/
+    """
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from an SSRN publication page
+        """
+        t0 = time.time()
+
+        url = self.get_api_url(identifier)
+
+        response = requests.get(url).text
+        soup = BeautifulSoup(response, "html.parser")
+
+        if self.parent.logger:
+            self.parent.logger.debug(soup.prettify())
+
+        meta = OrderedDict()
+
+        meta["doi"] = soup.find("meta", {"name": "citation_doi"})["content"]
+        meta["title"] = soup.find("meta", attrs={"name": "citation_title"})["content"]
+
+        keywords_list_raw = soup.find("meta", attrs={"name": "citation_keywords"})["content"].split(";")
+        keywords = [k.strip() for k in keywords_list_raw]
+        meta["keywords"] = keywords
+
+        auth_list = soup.find_all("meta", {"name":"citation_author"})
+        authors = [a["content"] for a in auth_list]
+        meta["authors"] = authors
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return meta
+
+
 ######################################################################
 ## federated API access
 
@@ -386,6 +422,14 @@ class ScholInfraAPI:
             api_url = "https://api.repec.org/call.cgi?code={}&getref={}",
             cgi_url = "https://ideas.repec.org/cgi-bin/htsearch?q={}"
             )
+
+        self.ssrn = ScholInfra_SSRN(
+            parent=self,
+            name="SSRN",
+            api_url ="https://doi.org/{}"
+            )
+
+
 
 
 ######################################################################

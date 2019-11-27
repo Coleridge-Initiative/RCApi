@@ -7,6 +7,9 @@ chromedriver.exe
 *.pyc
 __pycache__
 
+# testing junk
+.coverage
+
 # Setuptools distribution folder
 /dist/
 /build/

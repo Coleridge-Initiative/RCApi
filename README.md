@@ -105,24 +105,22 @@ The State of OA: A large-scale analysis of the prevalence and impact of Open Acc
 
 ## Testing
 
-To run unit tests for the APIs which do not require credentials:
+First, be sure that you're testing the source and not from an installed library:
 
 ```
-python test/test.py
+pip uninstall richcontext-scholapi
 ```
 
-To run unit tests for all of the APIs:
+Then run unit tests for the APIs which do not require credentials:
 
 ```
-python test/full_test.py
-```
+nose2 -v --pretty-assert
 
 
 ## To Do
 
- * Dimensions API for dataset metadata
- * scrape metadata from web pages PMC/Pubmed, NIH, etc.
  * SSRN
+ * scrape metadata from web pages PMC/Pubmed, NIH, etc.
  * https://paperswithcode.com/?ref=semscholar
  * Springer <https://github.com/srand525/search_springer/blob/master/SpringerFetch.py>
 
