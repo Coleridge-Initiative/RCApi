@@ -9,11 +9,11 @@ class TestOpenAPIs (unittest.TestCase):
 
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+        title = "Zebrafish models: Gaining insight into purinergic signaling and neurological disorders"
         meta = schol.europepmc.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
-        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.appet.2017.07.006'), ('pmcid', 'PMC5574185'), ('journal', 'Appetite'), ('authors', ['Taillie LS', 'Ng SW', 'Xue Y', 'Harding M.']), ('pdf', 'http://europepmc.org/articles/PMC5574185?pdf=render')])")
+        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('pmcid', None), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])")
 
 
     def test_openaire_title_search (self):

@@ -105,11 +105,8 @@ The State of OA: A large-scale analysis of the prevalence and impact of Open Acc
 
 ## Testing
 
-First, be sure that you're testing the source and not from an installed library:
-
-```
-pip uninstall richcontext-scholapi
-```
+First, be sure that you're testing the source and not from an
+installed library.
 
 Then run unit tests for the APIs which do not require credentials:
 

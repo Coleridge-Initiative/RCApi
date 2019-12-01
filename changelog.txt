@@ -1,5 +1,14 @@
 # `richcontext.scholapi` changelog
 
+## 1.0.1
+
+2019-11-30
+
+### Fixed
+
+  * EuropePMC: resolved edge case where returned titles could be null, causing exceptions
+
+
 ## 1.0.0
 
 2019-11-23
