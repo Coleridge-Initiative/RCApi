@@ -25,7 +25,7 @@ if __name__ == "__main__":
     doi = "10.1016/j.appet.2017.07.006"
 
     # run it...
-    meta = schol.openaire.title_search(title)
+    meta = schol.europepmc.title_search(title)
 
     # report results
     pprint.pprint(meta)

@@ -48,7 +48,10 @@ class ScholInfra:
         """
         within reason, do the two titles match?
         """
-        return self.clean_title(title0) == self.clean_title(title1)
+        if not title0 or not title1:
+            return False
+        else:
+            return self.clean_title(title0) == self.clean_title(title1)
 
 
     def get_api_url (self, *args):
