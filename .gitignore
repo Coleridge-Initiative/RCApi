@@ -8,6 +8,7 @@ chromedriver.exe
 __pycache__
 
 # testing junk
+venv
 .coverage
 pyvenv.cfg
 rcapi_testing
