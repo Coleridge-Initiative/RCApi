@@ -9,7 +9,8 @@ __pycache__
 
 # testing junk
 .coverage
-venv
+pyvenv.cfg
+rcapi_testing
 
 # Setuptools distribution folder
 /dist/

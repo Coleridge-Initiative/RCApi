@@ -13,6 +13,12 @@ import sys
 import time
 import traceback
 import urllib.parse
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+
 
 
 class ScholInfra:
@@ -336,15 +342,7 @@ class ScholInfra_SSRN (ScholInfra):
     """
     https://www.ssrn.com/index.cfm/en/
     """
-
-    def publication_lookup (self, identifier):
-        """
-        parse metadata returned from an SSRN publication page
-        """
-        t0 = time.time()
-
-        url = self.get_api_url(identifier)
-
+    def url_lookup(self, url):
         response = requests.get(url).text
         soup = BeautifulSoup(response, "html.parser")
 
@@ -363,10 +361,42 @@ class ScholInfra_SSRN (ScholInfra):
         auth_list = soup.find_all("meta", {"name":"citation_author"})
         authors = [a["content"] for a in auth_list]
         meta["authors"] = authors
+        return meta
+    
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from an SSRN publication page using a doi.
+        """
+        t0 = time.time()
+        if 'ssrn' in url:
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+            url = self.get_api_url(identifier)
 
+            meta = self.url_lookup(url)
+
+            t1 = time.time()
+            self.elapsed_time = (t1 - t0) * 1000.0
+
+            return meta
+        else:
+            return None
+
+
+    def title_search(self,title):
+        ssrn_homepage = 'https://www.ssrn.com/index.cfm/en/'
+        chrome_path=self.parent.config["DEFAULT"]["chrome_exe_path"]
+        browser = webdriver.Chrome(executable_path=chrome_path)
+        browser.get(ssrn_homepage)
+        class_name = 'form-control'
+        search = browser.find_element_by_class_name(class_name)
+        search.send_keys(title)
+        search.send_keys(Keys.RETURN)
+        search_url = browser.current_url
+        search_url_result = browser.get(search_url)
+        result_element = browser.find_element_by_xpath("//*[@class='title optClickTitle']")
+        url = result_element.get_attribute('href')
+        browser.quit()
+        meta = self.url_lookup(url)
         return meta
 
 
@@ -431,7 +461,6 @@ class ScholInfraAPI:
             name="SSRN",
             api_url ="https://doi.org/{}"
             )
-
 
 
 
