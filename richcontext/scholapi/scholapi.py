@@ -378,9 +378,8 @@ class ScholInfra_SSRN (ScholInfra):
         parse metadata returned from an SSRN publication page using a DOI
         """
         t0 = time.time()
-
-        if "ssrn" in url:
-            url = self.get_api_url(identifier)
+        url = self.get_api_url(identifier)
+        if "ssrn" in url:    
             meta = self.url_lookup(url)
 
             t1 = time.time()
