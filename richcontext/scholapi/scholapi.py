@@ -379,6 +379,7 @@ class ScholInfra_SSRN (ScholInfra):
         """
         t0 = time.time()
         url = self.get_api_url(identifier)
+
         if "ssrn" in url:    
             meta = self.url_lookup(url)
 
