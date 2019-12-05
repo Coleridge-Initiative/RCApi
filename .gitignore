@@ -8,8 +8,10 @@ chromedriver.exe
 __pycache__
 
 # testing junk
-.coverage
 venv
+.coverage
+pyvenv.cfg
+rcapi_testing
 
 # Setuptools distribution folder
 /dist/
