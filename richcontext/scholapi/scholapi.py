@@ -227,6 +227,8 @@ class ScholInfra_dissemin (ScholInfra):
 
             if len(meta) < 1:
                 return None
+            elif "error" in meta:
+                raise Exception(str(meta))
             else:
                 return meta
 
