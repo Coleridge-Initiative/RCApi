@@ -13,8 +13,7 @@ class TestOpenAPIs (unittest.TestCase):
         meta = schol.europepmc.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
-        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('pmcid', None), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])")
-
+        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])")
 
     def test_openaire_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")

@@ -41,7 +41,13 @@ class ScholInfra:
         return the named value from an XML node, if it exists
         """
         node = root.find(name)
-        return (node.text if node else None)
+
+        if not node:
+            return None
+        elif len(node.text) < 1:
+            return None
+        else:
+            return node.text.strip()
 
 
     def clean_title (self, title):
@@ -83,6 +89,7 @@ class ScholInfra_EuropePMC (ScholInfra):
 
             url = self.get_api_url(urllib.parse.quote(title))
             response = requests.get(url).text
+
             soup = BeautifulSoup(response,  "html.parser")
 
             if self.parent.logger:
@@ -98,26 +105,35 @@ class ScholInfra_EuropePMC (ScholInfra):
                 result_title = self.get_xml_node_value(result, "title")
 
                 if self.title_match(title, result_title):
-                    if "doi" in meta:
-                        meta["doi"] = self.get_xml_node_value(result, "doi")
+                    val = self.get_xml_node_value(result, "doi")
 
-                    if "pmcid" in meta:
-                        meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
+                    if val:
+                        meta["doi"] = val
 
-                        if self.get_xml_node_value(result, "haspdf") == "Y":
+                    val = self.get_xml_node_value(result, "pmcid")
+
+                    if val:
+                        meta["pmcid"] = val
+                        has_pdf = self.get_xml_node_value(result, "haspdf")
+
+                        if has_pdf == "Y":
                             meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
 
-                    if "journaltitle" in meta:
-                        meta["journal"] = self.get_xml_node_value(result, "journaltitle")
+                    val = self.get_xml_node_value(result, "journaltitle")
 
-                    if "authorstring" in meta:
-                        meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+                    if val:
+                        meta["journal"] = val
 
-                    if "id" in meta and "source" in meta:
-                        meta["url"] = "https://europepmc.org/article/{}/{}".format(
-                            self.get_xml_node_value(result, "source"),
-                            self.get_xml_node_value(result, "id")
-                            )
+                    val = self.get_xml_node_value(result, "authorstring")
+
+                    if val:
+                        meta["authors"] = val.split(", ")
+
+                    source = self.get_xml_node_value(result, "source"),
+                    pmid = self.get_xml_node_value(result, "pmid")
+
+                    if (source and pmid) and not isinstance(source, tuple):
+                        meta["url"] = "https://europepmc.org/article/{}/{}".format(source, pmid)
 
             t1 = time.time()
             self.elapsed_time = (t1 - t0) * 1000.0
