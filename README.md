@@ -57,6 +57,10 @@ Parameters needed in the configuration file include:
 Download the [Chrome webdriver](https://chromedriver.chromium.org/downloads) 
 to enable use of Selenium.
 
+For a good (although slightly dated) tutorial for installing and
+testing Selenium on Ubuntu Linux, see:
+<https://christopher.su/2015/selenium-chromedriver-ubuntu/>
+
 
 ## Usage
 
@@ -90,7 +94,7 @@ APIs used to retrieve metadata:
   * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
   * [RePEc](https://ideas.repec.org/api.html)
-
+  * [SSRN](https://www.ssrn.com/)
 
 See `docs/enrich_pubs.ipynb` for example API usage to pull the
 federated metadata for a publication.
@@ -117,10 +121,14 @@ nose2 -v --pretty-assert
 
 ## To Do
 
- * SSRN
- * scrape metadata from web pages PMC/Pubmed, NIH, etc.
- * https://paperswithcode.com/?ref=semscholar
- * Springer <https://github.com/srand525/search_springer/blob/master/SpringerFetch.py>
+ * parse HTML-embedded metadata from the web pages for PMC/Pubmed, NIH, etc.
+ * [Scholexplorer](http://scholexplorer.openaire.eu/#/)
+ * [DataCite and Crossref integrations](https://github.com/NYU-CI/RCApi/issues/8)
+ * [PapersWithCode](https://paperswithcode.com/?ref=semscholar)
+ * [Springer](https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
+
+If you'd like to contribute, please see our listings of
+[*good first issues*](https://github.com/NYU-CI/RCApi/labels/good%20first%20issue)
 
 
 ## Kudos
@@ -128,8 +136,10 @@ nose2 -v --pretty-assert
 Contributors:
 [@ceteri](https://github.com/ceteri), 
 [@srand525](https://github.com/srand525), 
+[@IanMulvany](https://github.com/IanMulvany),
 plus many thanks for the inspiring *2019 Rich Context Workshop* notes by 
 [@metasj](https://github.com/metasj),
 and guidance from
 [@claytonrsh](https://github.com/claytonrsh),
-[@IanMulvany](https://github.com/IanMulvany).
+[@Juliaingridlane](https://github.com/Juliaingridlane).
+
