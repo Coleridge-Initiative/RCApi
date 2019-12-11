@@ -3,6 +3,7 @@
 
 from bs4 import BeautifulSoup
 from collections import OrderedDict
+from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -30,6 +31,8 @@ class ScholInfra:
         self.name = name
         self.api_url = api_url
         self.cgi_url = cgi_url
+
+        self.api_obj = None
         self.elapsed_time = 0.0
 
 
@@ -210,18 +213,25 @@ class ScholInfra_Dimensions (ScholInfra):
     https://docs.dimensions.ai/dsl/
     """
 
+    def login (self):
+        """
+        login to the Dimensions API through their 'DSL'
+        """
+        if not self.api_obj:
+            dimcli.login(
+                username=self.parent.config["DEFAULT"]["email"],
+                password=self.parent.config["DEFAULT"]["dimensions_password"]
+                )
+
+            self.api_obj = dimcli.Dsl(verbose=False)
+
+
     def run_query (self, query):
         """
-        run one Dimensions API query through their 'DSL'
+        run one Dimensions API query, and first login if needed
         """
-        dimcli.login(
-            username=self.parent.config["DEFAULT"]["email"],
-            password=self.parent.config["DEFAULT"]["dimensions_password"]
-            )
-
-        dsl = dimcli.Dsl(verbose=False)
-
-        return dsl.query(query)
+        self.login()
+        return self.api_obj.query(query)
 
 
     def title_search (self, title):
@@ -233,19 +243,21 @@ class ScholInfra_Dimensions (ScholInfra):
         enc_title = title.replace('"', '\\"')
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
+        self.login()
         response = self.run_query(query)
 
-        for meta in response.publications:
-            result_title = meta["title"]
+        if hasattr(response, "publications"):
+            for meta in response.publications:
+                result_title = meta["title"]
 
-            if self.title_match(title, result_title):
-                if self.parent.logger:
-                    self.parent.logger.debug(meta)
+                if self.title_match(title, result_title):
+                    if self.parent.logger:
+                        self.parent.logger.debug(meta)
 
-                t1 = time.time()
-                self.elapsed_time = (t1 - t0) * 1000.0
+                    t1 = time.time()
+                    self.elapsed_time = (t1 - t0) * 1000.0
 
-                return meta
+                    return meta
 
         return None
 
@@ -257,6 +269,8 @@ class ScholInfra_Dimensions (ScholInfra):
         t0 = time.time()
 
         query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
+
+        self.login()
         response = self.run_query(query)
 
         t1 = time.time()
