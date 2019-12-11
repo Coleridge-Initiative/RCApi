@@ -98,13 +98,26 @@ class ScholInfra_EuropePMC (ScholInfra):
                 result_title = self.get_xml_node_value(result, "title")
 
                 if self.title_match(title, result_title):
-                    meta["doi"] = self.get_xml_node_value(result, "doi")
-                    meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
-                    meta["journal"] = self.get_xml_node_value(result, "journaltitle")
-                    meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+                    if "doi" in meta:
+                        meta["doi"] = self.get_xml_node_value(result, "doi")
 
-                    if self.get_xml_node_value(result, "haspdf") == "Y":
-                        meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+                    if "pmcid" in meta:
+                        meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
+
+                        if self.get_xml_node_value(result, "haspdf") == "Y":
+                            meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+
+                    if "journaltitle" in meta:
+                        meta["journal"] = self.get_xml_node_value(result, "journaltitle")
+
+                    if "authorstring" in meta:
+                        meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+
+                    if "id" in meta and "source" in meta:
+                        meta["url"] = "https://europepmc.org/article/{}/{}".format(
+                            self.get_xml_node_value(result, "source"),
+                            self.get_xml_node_value(result, "id")
+                            )
 
             t1 = time.time()
             self.elapsed_time = (t1 - t0) * 1000.0
