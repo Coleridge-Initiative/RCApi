@@ -3,7 +3,6 @@
 
 from bs4 import BeautifulSoup
 from collections import OrderedDict
-from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -13,6 +12,7 @@ import configparser
 import dimcli
 import json
 import logging
+import pprint
 import re
 import requests
 import sys
@@ -78,37 +78,47 @@ class ScholInfra_EuropePMC (ScholInfra):
         """
         parse metadata from XML returned from the EuropePMC API query
         """
-        t0 = time.time()
+        try:
+            t0 = time.time()
 
-        url = self.get_api_url(urllib.parse.quote(title))
-        response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
+            url = self.get_api_url(urllib.parse.quote(title))
+            response = requests.get(url).text
+            soup = BeautifulSoup(response,  "html.parser")
 
-        if self.parent.logger:
-            self.parent.logger.debug(soup.prettify())
-
-        meta = OrderedDict()
-        result_list = soup.find_all("result")
-
-        for result in result_list:
             if self.parent.logger:
-                self.parent.logger.debug(result)
+                self.parent.logger.debug(soup.prettify())
 
-            result_title = self.get_xml_node_value(result, "title")
+            meta = OrderedDict()
+            result_list = soup.find_all("result")
 
-            if self.title_match(title, result_title):
-                meta["doi"] = self.get_xml_node_value(result, "doi")
-                meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
-                meta["journal"] = self.get_xml_node_value(result, "journaltitle")
-                meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+            for result in result_list:
+                if self.parent.logger:
+                    self.parent.logger.debug(result)
 
-                if self.get_xml_node_value(result, "haspdf") == "Y":
-                    meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+                result_title = self.get_xml_node_value(result, "title")
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+                if self.title_match(title, result_title):
+                    meta["doi"] = self.get_xml_node_value(result, "doi")
+                    meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
+                    meta["journal"] = self.get_xml_node_value(result, "journaltitle")
+                    meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
 
-        return meta
+                    if self.get_xml_node_value(result, "haspdf") == "Y":
+                        meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+
+            t1 = time.time()
+            self.elapsed_time = (t1 - t0) * 1000.0
+
+            if len(meta) < 1:
+                return None
+            else:
+                return meta
+
+        except:
+            self.elapsed_time = 0.0
+            print(traceback.format_exc())
+            print("ERROR: {}".format(title))
+            return None
 
 
 class ScholInfra_OpenAIRE (ScholInfra):
@@ -143,7 +153,10 @@ class ScholInfra_OpenAIRE (ScholInfra):
         t1 = time.time()
         self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+        if len(meta) < 1:
+            return None
+        else:
+            return meta
 
 
 class ScholInfra_SemanticScholar (ScholInfra):
@@ -163,7 +176,10 @@ class ScholInfra_SemanticScholar (ScholInfra):
         t1 = time.time()
         self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+        if len(meta) < 1:
+            return None
+        else:
+            return meta
 
 
 class ScholInfra_Unpaywall (ScholInfra):
@@ -185,7 +201,10 @@ class ScholInfra_Unpaywall (ScholInfra):
         t1 = time.time()
         self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+        if len(meta) < 1:
+            return None
+        else:
+            return meta
 
 
 class ScholInfra_dissemin (ScholInfra):
@@ -197,15 +216,25 @@ class ScholInfra_dissemin (ScholInfra):
         """
         parse metadata returned from a dissemin API query
         """
-        t0 = time.time()
+        try:
+            t0 = time.time()
 
-        url = self.get_api_url(identifier)
-        meta = json.loads(requests.get(url).text)
+            url = self.get_api_url(identifier)
+            meta = json.loads(requests.get(url).text)
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+            t1 = time.time()
+            self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+            if len(meta) < 1:
+                return None
+            else:
+                return meta
+
+        except:
+            self.elapsed_time = 0.0
+            print(traceback.format_exc())
+            print("ERROR: {}".format(identifier))
+            return None
 
 
 class ScholInfra_Dimensions (ScholInfra):
@@ -257,7 +286,10 @@ class ScholInfra_Dimensions (ScholInfra):
                     t1 = time.time()
                     self.elapsed_time = (t1 - t0) * 1000.0
 
-                    return meta
+                    if len(meta) < 1:
+                        return None
+                    else:
+                        return meta
 
         return None
 
@@ -342,7 +374,10 @@ class ScholInfra_RePEc (ScholInfra):
             t1 = time.time()
             self.elapsed_time = (t1 - t0) * 1000.0
 
-            return meta
+            if len(meta) < 1:
+                return None
+            else:
+                return meta
 
         except:
             self.elapsed_time = 0.0
@@ -384,7 +419,10 @@ class ScholInfra_SSRN (ScholInfra):
         t1 = time.time()
         self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+        if len(meta) < 1:
+            return None
+        else:
+            return meta
     
 
     def publication_lookup (self, identifier):
@@ -399,7 +437,11 @@ class ScholInfra_SSRN (ScholInfra):
 
             t1 = time.time()
             self.elapsed_time = (t1 - t0) * 1000.0
-            return meta
+
+            if len(meta) < 1:
+                return None
+            else:
+                return meta
         else:
             return None
 
@@ -434,7 +476,10 @@ class ScholInfra_SSRN (ScholInfra):
         t1 = time.time()
         self.elapsed_time = (t1 - t0) * 1000.0
 
-        return meta
+        if len(meta) < 1:
+            return None
+        else:
+            return meta
 
 
 ######################################################################
