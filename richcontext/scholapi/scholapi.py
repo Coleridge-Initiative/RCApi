@@ -3,6 +3,7 @@
 
 from bs4 import BeautifulSoup
 from collections import OrderedDict
+import crossref_commons.retrieval
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -423,6 +424,27 @@ class ScholInfra_SSRN (ScholInfra):
         return meta
 
 
+
+class ScholInfra_CrossRef (ScholInfra):
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from crossref API given a DOI
+        """
+        CR_API_AGENT=self.parent.config["DEFAULT"]["CR_API_AGENT"],
+        CR_API_MAILTO=self.parent.config["DEFAULT"]["CR_API_MAILTO"],
+
+        t0 = time.time()
+        url = self.get_api_url(identifier)
+        print(url)
+        
+        meta = crossref_commons.retrieval.get_publication_as_json(url)
+        print(meta)
+        if meta:
+            return meta
+        else:
+            return None
+
 ######################################################################
 ## federated API access
 
@@ -482,6 +504,12 @@ class ScholInfraAPI:
         self.ssrn = ScholInfra_SSRN(
             parent=self,
             name="SSRN",
+            api_url ="https://doi.org/{}"
+            )
+
+        self.crossref = ScholInfra_CrossRef(
+            parent=self,
+            name="CrossRef",
             api_url ="https://doi.org/{}"
             )
 

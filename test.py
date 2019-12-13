@@ -7,6 +7,15 @@ import unittest
    
 class TestOpenAPIs (unittest.TestCase):
 
+    def test_crossref_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1503/cmaj.170880"
+
+        meta = schol.crossref.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1503/cmaj.170880")
+
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Zebrafish models: Gaining insight into purinergic signaling and neurological disorders"
@@ -14,7 +23,6 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
         self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('pmcid', None), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])")
-
 
     def test_openaire_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
