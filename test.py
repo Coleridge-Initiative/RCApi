@@ -15,6 +15,26 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
         self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1503/cmaj.170880")
+    
+    def test_crossref_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES"
+
+        search_results = schol.crossref.full_text_search(search_term)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(search_results["total-results"] >= 884000)
+
+    def test_crossref_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
+
+        results = schol.crossref.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(results[0]["title"][0].lower() == title.lower())
+
+
 
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")

@@ -434,14 +434,59 @@ class ScholInfra_CrossRef (ScholInfra):
         
         t0 = time.time()
         url = self.get_api_url(identifier)
-        print(url)
         
         meta = crossref_commons.retrieval.get_publication_as_json(url)
-        print(meta)
+        
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+        
         if meta:
             return meta
         else:
             return None
+
+    def title_search (self, title):
+        """
+        parse metadata returned from crossref API given a title
+        """
+        
+        t0 = time.time()
+        url = "https://api.crossref.org/works?query.bibliographic={}".format(title)
+        response = requests.get(url).text
+
+        json_response = json.loads(response)
+
+        results = json_response["message"]["items"]
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        if results:
+            return results
+        else:
+            return None
+
+
+
+    def full_text_search (self, search_term):
+        """
+        search CrossRef using term e.g. NHANES - note, crossref doesn't support exact string matching for multi-term strings. see https://github.com/CrossRef/rest-api-doc/issues/143
+        """
+        t0 = time.time()
+
+        url = "https://api.crossref.org/works?query=%22{}%22/type/journal-article&rows=1000".format(search_term)
+
+        response = requests.get(url).text
+
+        json_response = json.loads(response)
+
+        search_results = json_response["message"]
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+
+        return search_results
+
 
 ######################################################################
 ## federated API access
