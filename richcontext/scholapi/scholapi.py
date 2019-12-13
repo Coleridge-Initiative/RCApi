@@ -431,9 +431,7 @@ class ScholInfra_CrossRef (ScholInfra):
         """
         parse metadata returned from crossref API given a DOI
         """
-        CR_API_AGENT=self.parent.config["DEFAULT"]["CR_API_AGENT"],
-        CR_API_MAILTO=self.parent.config["DEFAULT"]["CR_API_MAILTO"],
-
+        
         t0 = time.time()
         url = self.get_api_url(identifier)
         print(url)
