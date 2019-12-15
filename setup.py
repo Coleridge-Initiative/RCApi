@@ -5,10 +5,9 @@ with open("README.md", "r") as fh:
 
 setup(
     name="richcontext-scholapi",
-    version="1.0.1",
     author="Coleridge Initiative",
     author_email="dataanalytics@coleridgeinitiative.org",
-    description="Rich Context API integrations for federating metadata discovery and exchange across multiple scholarly infrastructure providers",
+    description="Rich Context API integrations for federating discovery services and metadata exchange across multiple scholarly infrastructure providers",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/NYU-CI/RCApi",
@@ -29,11 +28,15 @@ setup(
     python_requires=">=3.5",
     install_requires=[
         "beautifulsoup4",
+        "biopython",
+        "crossref-commons",
         "dimcli",
         "requests",
+        "requests-cache",
         "selenium",
+        "xmltodict",
     ],
-    keywords="DOI, RePEc, Rich Context, discovery, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
+    keywords="Rich Context, DOI, RePEc, PubMed, Crossref, Dimensions, EuropePMC, OpenAIRE, Unpaywall, dissemin, Semantic Scholar, discovery, discovery service, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
     license="MIT",
     include_package_data=True,
     zip_safe=False
