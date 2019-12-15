@@ -7,33 +7,6 @@ import unittest
    
 class TestOpenAPIs (unittest.TestCase):
 
-    def test_crossref_publication_lookup (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        doi = "10.1503/cmaj.170880"
-
-        meta = schol.crossref.publication_lookup(doi)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1503/cmaj.170880")
-    
-    def test_crossref_fulltext_search (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        search_term = "NHANES"
-
-        search_results = schol.crossref.full_text_search(search_term)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(search_results["total-results"] >= 884000)
-
-    def test_crossref_title_search (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
-
-        results = schol.crossref.title_search(title)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(results[0]["title"][0].lower() == title.lower())
-
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Zebrafish models: Gaining insight into purinergic signaling and neurological disorders"
@@ -41,6 +14,7 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.europepmc.elapsed_time, schol.europepmc.name))
         self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('pmcid', None), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])")
+
 
     def test_openaire_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
@@ -50,6 +24,37 @@ class TestOpenAPIs (unittest.TestCase):
         print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
 
+
+    def test_crossref_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1503/cmaj.170880"
+
+        meta = schol.crossref.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1503/cmaj.170880")
+
+
+    def test_crossref_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
+
+        meta = schol.crossref.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1177/0042098017740285")
+
+
+    def test_crossref_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES"
+
+        search_results = schol.crossref.full_text_search(search_term)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
+        self.assertTrue(search_results["total-results"] >= 884000)
+
+
     def test_pubmed_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Climate-change-driven accelerated sea-level rise detected in the altimeter era"
@@ -57,7 +62,7 @@ class TestOpenAPIs (unittest.TestCase):
         meta = schol.pubmed.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
-        self.assertTrue(meta["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["PMID"]["#text"] == "29440401")
+        self.assertTrue(meta["MedlineCitation"]["PMID"]["#text"] == "29440401")
 
 
     def test_semantic_publication_lookup (self):

@@ -95,6 +95,8 @@ APIs used to retrieve metadata:
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
   * [RePEc](https://ideas.repec.org/api.html)
   * [SSRN](https://www.ssrn.com/)
+  * [Crossref](https://www.crossref.org/services/metadata-delivery/)
+  * [PubMed](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
 
 See `docs/enrich_pubs.ipynb` for example API usage to pull the
 federated metadata for a publication.
@@ -123,7 +125,7 @@ nose2 -v --pretty-assert
 
  * parse HTML-embedded metadata from the web pages for PMC/Pubmed, NIH, etc.
  * [Scholexplorer](http://scholexplorer.openaire.eu/#/)
- * [DataCite and Crossref integrations](https://github.com/NYU-CI/RCApi/issues/8)
+ * [DataCite integration](https://github.com/NYU-CI/RCApi/issues/8)
  * [PapersWithCode](https://paperswithcode.com/?ref=semscholar)
  * [Springer](https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
 
@@ -142,4 +144,3 @@ plus many thanks for the inspiring *2019 Rich Context Workshop* notes by
 and guidance from
 [@claytonrsh](https://github.com/claytonrsh),
 [@Juliaingridlane](https://github.com/Juliaingridlane).
-

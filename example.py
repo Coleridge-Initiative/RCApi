@@ -4,7 +4,6 @@
 from richcontext import scholapi as rc_scholapi
 import logging
 import pprint
-import requests
 import sys
 
 
@@ -21,8 +20,8 @@ if __name__ == "__main__":
     schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
 
     # search parameters for example publications
-    title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
     doi = "10.1016/j.appet.2017.07.006"
+    title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
 
     # run it...
     meta = schol.europepmc.title_search(title)
