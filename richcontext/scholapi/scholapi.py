@@ -14,6 +14,7 @@ import crossref_commons.retrieval
 import dimcli
 import json
 import logging
+import pprint
 import re
 import requests
 import requests_cache
@@ -34,6 +35,8 @@ class ScholInfra:
         self.name = name
         self.api_url = api_url
         self.cgi_url = cgi_url
+
+        self.api_obj = None
         self.elapsed_time = 0.0
 
 
@@ -42,7 +45,13 @@ class ScholInfra:
         return the named value from an XML node, if it exists
         """
         node = root.find(name)
-        return (node.text if node else None)
+
+        if not node:
+            return None
+        elif len(node.text) < 1:
+            return None
+        else:
+            return node.text.strip()
 
 
     def clean_title (self, title):
@@ -87,38 +96,67 @@ class ScholInfra_EuropePMC (ScholInfra):
         """
         parse metadata from XML returned from the EuropePMC API query
         """
-        t0 = time.time()
+        try:
+            t0 = time.time()
 
-        url = self.get_api_url(urllib.parse.quote(title))
-        response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
+            url = self.get_api_url(urllib.parse.quote(title))
+            response = requests.get(url).text
 
-        if self.parent.logger:
-            self.parent.logger.debug(soup.prettify())
+            soup = BeautifulSoup(response,  "html.parser")
 
-        meta = OrderedDict()
-        result_list = soup.find_all("result")
-
-        for result in result_list:
             if self.parent.logger:
-                self.parent.logger.debug(result)
+                self.parent.logger.debug(soup.prettify())
 
-            result_title = self.get_xml_node_value(result, "title")
+            meta = OrderedDict()
+            result_list = soup.find_all("result")
 
-            if self.title_match(title, result_title):
-                meta["doi"] = self.get_xml_node_value(result, "doi")
-                meta["pmcid"] = self.get_xml_node_value(result, "pmcid")
-                meta["journal"] = self.get_xml_node_value(result, "journaltitle")
-                meta["authors"] = self.get_xml_node_value(result, "authorstring").split(", ")
+            for result in result_list:
+                if self.parent.logger:
+                    self.parent.logger.debug(result)
 
-                if self.get_xml_node_value(result, "haspdf") == "Y":
-                    meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+                result_title = self.get_xml_node_value(result, "title")
 
-        self.mark_time(t0)
+                if self.title_match(title, result_title):
+                    val = self.get_xml_node_value(result, "doi")
 
-        if len(meta) > 0:
-            return meta
-        else:
+                    if val:
+                        meta["doi"] = val
+
+                    val = self.get_xml_node_value(result, "pmcid")
+
+                    if val:
+                        meta["pmcid"] = val
+                        has_pdf = self.get_xml_node_value(result, "haspdf")
+
+                        if has_pdf == "Y":
+                            meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
+
+                    val = self.get_xml_node_value(result, "journaltitle")
+
+                    if val:
+                        meta["journal"] = val
+
+                    val = self.get_xml_node_value(result, "authorstring")
+
+                    if val:
+                        meta["authors"] = val.split(", ")
+
+                    source = self.get_xml_node_value(result, "source"),
+                    pmid = self.get_xml_node_value(result, "pmid")
+
+                    if (source and pmid) and not isinstance(source, tuple):
+                        meta["url"] = "https://europepmc.org/article/{}/{}".format(source, pmid)
+
+            self.mark_time(t0)
+
+            if len(meta) < 1:
+                return None
+            else:
+                return meta
+        except:
+            print(traceback.format_exc())
+            print("ERROR: {}".format(title))
+            self.mark_time(t0)
             return None
 
 
@@ -212,16 +250,24 @@ class ScholInfra_dissemin (ScholInfra):
         """
         parse metadata returned from a dissemin API query
         """
-        t0 = time.time()
+        try:
+            t0 = time.time()
 
-        url = self.get_api_url(identifier)
-        meta = json.loads(requests.get(url).text)
+            url = self.get_api_url(identifier)
+            meta = json.loads(requests.get(url).text)
 
-        self.mark_time(t0)
+            self.mark_time(t0)
 
-        if meta and len(meta) > 0:
-            return meta
-        else:
+            if len(meta) < 1:
+                return None
+            elif "error" in meta:
+                raise Exception(str(meta))
+            else:
+                return meta
+        except:
+            print(traceback.format_exc())
+            print("ERROR: {}".format(identifier))
+            self.mark_time(t0)
             return None
 
 
@@ -230,18 +276,25 @@ class ScholInfra_Dimensions (ScholInfra):
     https://docs.dimensions.ai/dsl/
     """
 
+    def login (self):
+        """
+        login to the Dimensions API through their 'DSL'
+        """
+        if not self.api_obj:
+            dimcli.login(
+                username=self.parent.config["DEFAULT"]["email"],
+                password=self.parent.config["DEFAULT"]["dimensions_password"]
+                )
+
+            self.api_obj = dimcli.Dsl(verbose=False)
+
+
     def run_query (self, query):
         """
-        run one Dimensions API query through their 'DSL'
+        run one Dimensions API query, and first login if needed
         """
-        dimcli.login(
-            username=self.parent.config["DEFAULT"]["email"],
-            password=self.parent.config["DEFAULT"]["dimensions_password"]
-            )
-
-        dsl = dimcli.Dsl(verbose=False)
-
-        return dsl.query(query)
+        self.login()
+        return self.api_obj.query(query)
 
 
     def title_search (self, title):
@@ -253,17 +306,21 @@ class ScholInfra_Dimensions (ScholInfra):
         enc_title = title.replace('"', '\\"')
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
+        self.login()
         response = self.run_query(query)
 
-        for meta in response.publications:
-            result_title = meta["title"]
+        if hasattr(response, "publications"):
+            for meta in response.publications:
+                result_title = meta["title"]
 
-            if self.title_match(title, result_title):
-                if self.parent.logger:
-                    self.parent.logger.debug(meta)
+                if self.title_match(title, result_title):
+                    if self.parent.logger:
+                        self.parent.logger.debug(meta)
 
-                self.mark_time(t0)
-                return meta
+                    self.mark_time(t0)
+
+                    if len(meta) > 0:
+                        return meta
 
         self.mark_time(t0)
         return None
@@ -276,6 +333,8 @@ class ScholInfra_Dimensions (ScholInfra):
         t0 = time.time()
 
         query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
+
+        self.login()
         response = self.run_query(query)
         search_results = response.publications
 
@@ -340,7 +399,11 @@ class ScholInfra_RePEc (ScholInfra):
             meta = json.loads(requests.get(url).text)
 
             self.mark_time(t0)
-            return meta
+
+            if meta and len(meta) > 0:
+                return meta
+            else:
+                return None
         except:
             print(traceback.format_exc())
             print("ERROR: {}".format(handle))
@@ -396,7 +459,11 @@ class ScholInfra_SSRN (ScholInfra):
         if "ssrn" in url:    
             meta = self.url_lookup(url)
             self.mark_time(t0)
-            return meta
+
+            if meta and len(meta) > 0:
+                return meta
+            else:
+                return None
         else:
             self.mark_time(t0)
             return None
@@ -501,7 +568,7 @@ class ScholInfra_Crossref (ScholInfra):
 
 class ScholInfra_PubMed (ScholInfra):
     """
-    https://www.ncbi.nlm.nih.gov/pubmed/
+    parse metadata returned from PubMed's Entrez API given a title
     """
 
     def title_search (self, title):

@@ -27,5 +27,5 @@ if __name__ == "__main__":
     meta = schol.europepmc.title_search(title)
 
     # report results
-    pprint.pprint(meta)
+    print(meta)
     print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
