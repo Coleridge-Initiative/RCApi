@@ -4,6 +4,7 @@
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 import crossref_commons.retrieval
+from Bio import Entrez
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -19,7 +20,7 @@ import sys
 import time
 import traceback
 import urllib.parse
-
+import xmltodict
 
 class ScholInfra:
     """
@@ -488,6 +489,32 @@ class ScholInfra_CrossRef (ScholInfra):
         return search_results
 
 
+class ScholInfra_PubMed (ScholInfra):
+    """
+    https://www.ncbi.nlm.nih.gov/pubmed/
+    """
+
+    def title_search (self, title):
+        t0 = time.time()
+        
+        Entrez.email = self.parent.config["DEFAULT"]["email"]
+        
+        handle = Entrez.read(Entrez.esearch(db="pubmed", retmax=100, term="\"{}\"".format(title),field = "title",retmode = "xml"))
+        
+        search_id = handle["IdList"][0]
+        
+        fetch_result = Entrez.efetch(db="pubmed", id=search_id,retmode = "xml")
+
+        data = fetch_result.read()
+        fetch_result.close()
+
+        xml = xmltodict.parse(data)
+        meta = json.loads(json.dumps(xml))
+
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
+        return meta
+
 ######################################################################
 ## federated API access
 
@@ -502,6 +529,12 @@ class ScholInfraAPI:
         self.config.read(config_file)
         self.logger = logger
 
+        self.crossref = ScholInfra_CrossRef(
+            parent=self,
+            name="CrossRef",
+            api_url ="https://doi.org/{}"
+            )
+        
         self.europepmc = ScholInfra_EuropePMC(
             parent=self,
             name="EuropePMC",
@@ -512,6 +545,12 @@ class ScholInfraAPI:
             parent=self,
             name="OpenAIRE",
             api_url="http://api.openaire.eu/search/publications?title={}"
+            )
+
+
+        self.pubmed = ScholInfra_PubMed(
+            parent=self,
+            name="PubMed"
             )
 
         self.semantic = ScholInfra_SemanticScholar(
@@ -550,11 +589,7 @@ class ScholInfraAPI:
             api_url ="https://doi.org/{}"
             )
 
-        self.crossref = ScholInfra_CrossRef(
-            parent=self,
-            name="CrossRef",
-            api_url ="https://doi.org/{}"
-            )
+       
 
 
 

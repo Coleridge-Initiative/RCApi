@@ -34,8 +34,6 @@ class TestOpenAPIs (unittest.TestCase):
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
         self.assertTrue(results[0]["title"][0].lower() == title.lower())
 
-
-
     def test_europepmc_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Zebrafish models: Gaining insight into purinergic signaling and neurological disorders"
@@ -51,6 +49,15 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
+
+    def test_pubmed_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Climate-change-driven accelerated sea-level rise detected in the altimeter era"
+
+        meta = schol.pubmed.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
+        self.assertTrue(meta["PubmedArticleSet"]["PubmedArticle"]["MedlineCitation"]["PMID"]["#text"] == "29440401")
 
 
     def test_semantic_publication_lookup (self):
