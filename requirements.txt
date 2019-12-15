@@ -1,4 +1,8 @@
 beautifulsoup4 >= 4.6.3
+biopython >= 1.75
+crossref-commons >= 0.0.6
 dimcli >= 0.6.1
 requests >= 2.22.0
+requests-cache >= 0.5.2
 selenium >= 3.141.0
+xmltodict >= 0.12.0

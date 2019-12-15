@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
+from Bio import Entrez
 from bs4 import BeautifulSoup
 from collections import OrderedDict
 from selenium import webdriver
@@ -9,16 +10,19 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 import configparser
+import crossref_commons.retrieval
 import dimcli
 import json
 import logging
 import pprint
 import re
 import requests
+import requests_cache
 import sys
 import time
 import traceback
 import urllib.parse
+import xmltodict
 
 
 class ScholInfra:
@@ -73,6 +77,14 @@ class ScholInfra:
         construct a URL to query the API
         """
         return self.api_url.format(*args)
+
+
+    def mark_time (self, t0):
+        """
+        mark the elapsed time since the start of the API access method
+        """
+        t1 = time.time()
+        self.elapsed_time = (t1 - t0) * 1000.0
 
 
 class ScholInfra_EuropePMC (ScholInfra):
@@ -135,18 +147,16 @@ class ScholInfra_EuropePMC (ScholInfra):
                     if (source and pmid) and not isinstance(source, tuple):
                         meta["url"] = "https://europepmc.org/article/{}/{}".format(source, pmid)
 
-            t1 = time.time()
-            self.elapsed_time = (t1 - t0) * 1000.0
+            self.mark_time(t0)
 
             if len(meta) < 1:
                 return None
             else:
                 return meta
-
         except:
-            self.elapsed_time = 0.0
             print(traceback.format_exc())
             print("ERROR: {}".format(title))
+            self.mark_time(t0)
             return None
 
 
@@ -177,15 +187,12 @@ class ScholInfra_OpenAIRE (ScholInfra):
                 meta["url"] = self.get_xml_node_value(result, "url")
                 meta["authors"] = [a.text for a in result.find_all("creator")]
                 meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
-                break
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+                self.mark_time(t0)
+                return meta
 
-        if len(meta) < 1:
-            return None
-        else:
-            return meta
+        self.mark_time(t0)
+        return None
 
 
 class ScholInfra_SemanticScholar (ScholInfra):
@@ -202,13 +209,12 @@ class ScholInfra_SemanticScholar (ScholInfra):
         url = self.get_api_url(identifier)
         meta = json.loads(requests.get(url).text)
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+        self.mark_time(t0)
 
-        if len(meta) < 1:
-            return None
-        else:
+        if meta and len(meta) > 0:
             return meta
+        else:
+            return None
 
 
 class ScholInfra_Unpaywall (ScholInfra):
@@ -227,13 +233,12 @@ class ScholInfra_Unpaywall (ScholInfra):
         url = self.get_api_url(identifier, email)
         meta = json.loads(requests.get(url).text)
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+        self.mark_time(t0)
 
-        if len(meta) < 1:
-            return None
-        else:
+        if meta and len(meta) > 0:
             return meta
+        else:
+            return None
 
 
 class ScholInfra_dissemin (ScholInfra):
@@ -251,8 +256,7 @@ class ScholInfra_dissemin (ScholInfra):
             url = self.get_api_url(identifier)
             meta = json.loads(requests.get(url).text)
 
-            t1 = time.time()
-            self.elapsed_time = (t1 - t0) * 1000.0
+            self.mark_time(t0)
 
             if len(meta) < 1:
                 return None
@@ -260,11 +264,10 @@ class ScholInfra_dissemin (ScholInfra):
                 raise Exception(str(meta))
             else:
                 return meta
-
         except:
-            self.elapsed_time = 0.0
             print(traceback.format_exc())
             print("ERROR: {}".format(identifier))
+            self.mark_time(t0)
             return None
 
 
@@ -314,14 +317,12 @@ class ScholInfra_Dimensions (ScholInfra):
                     if self.parent.logger:
                         self.parent.logger.debug(meta)
 
-                    t1 = time.time()
-                    self.elapsed_time = (t1 - t0) * 1000.0
+                    self.mark_time(t0)
 
-                    if len(meta) < 1:
-                        return None
-                    else:
+                    if len(meta) > 0:
                         return meta
 
+        self.mark_time(t0)
         return None
 
 
@@ -335,11 +336,10 @@ class ScholInfra_Dimensions (ScholInfra):
 
         self.login()
         response = self.run_query(query)
+        search_results = response.publications
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
-
-        return response.publications
+        self.mark_time(t0)
+        return search_results
 
 
 class ScholInfra_RePEc (ScholInfra):
@@ -378,16 +378,12 @@ class ScholInfra_RePEc (ScholInfra):
                 self.parent.logger.debug(li)
 
             # TODO: can we perform a title search here?
-
             handle = li.find("i").get_text()
-
-            t1 = time.time()
-            self.elapsed_time = (t1 - t0) * 1000.0
+            self.mark_time(t0)
 
             return handle
 
-        # otherwise...
-        self.elapsed_time = 0.0
+        self.mark_time(t0)
         return None
 
 
@@ -402,18 +398,16 @@ class ScholInfra_RePEc (ScholInfra):
             url = self.get_api_url(token, handle)
             meta = json.loads(requests.get(url).text)
 
-            t1 = time.time()
-            self.elapsed_time = (t1 - t0) * 1000.0
+            self.mark_time(t0)
 
-            if len(meta) < 1:
-                return None
-            else:
+            if meta and len(meta) > 0:
                 return meta
-
+            else:
+                return None
         except:
-            self.elapsed_time = 0.0
             print(traceback.format_exc())
             print("ERROR: {}".format(handle))
+            self.mark_time(t0)
             return None
 
 
@@ -447,13 +441,12 @@ class ScholInfra_SSRN (ScholInfra):
         authors = [a["content"] for a in auth_list]
         meta["authors"] = authors
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+        self.mark_time(t0)
 
-        if len(meta) < 1:
-            return None
-        else:
+        if len(meta) > 0:
             return meta
+        else:
+            return None
     
 
     def publication_lookup (self, identifier):
@@ -465,15 +458,14 @@ class ScholInfra_SSRN (ScholInfra):
 
         if "ssrn" in url:    
             meta = self.url_lookup(url)
+            self.mark_time(t0)
 
-            t1 = time.time()
-            self.elapsed_time = (t1 - t0) * 1000.0
-
-            if len(meta) < 1:
-                return None
-            else:
+            if meta and len(meta) > 0:
                 return meta
+            else:
+                return None
         else:
+            self.mark_time(t0)
             return None
 
 
@@ -503,14 +495,115 @@ class ScholInfra_SSRN (ScholInfra):
         browser.quit()
 
         meta = self.url_lookup(url)
+        self.mark_time(t0)
 
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
-
-        if len(meta) < 1:
-            return None
-        else:
+        if meta and len(meta) > 0:
             return meta
+        else:
+            return None
+
+
+class ScholInfra_Crossref (ScholInfra):
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from Crossref API given a DOI
+        """
+        t0 = time.time()
+
+        meta = crossref_commons.retrieval.get_publication_as_json(identifier)
+        self.mark_time(t0)
+        
+        if meta and len(meta) > 0:
+            return meta
+        else:
+            return None
+
+
+    def title_search (self, title):
+        """
+        parse metadata returned from Crossref API given a title
+        """
+        t0 = time.time()
+
+        query = "query.bibliographic={}".format(urllib.parse.quote(title))
+        url = self.get_api_url(query)
+
+        response = requests.get(url).text
+        json_response = json.loads(response)
+
+        meta = json_response["message"]["items"][0]
+        result_title = meta["title"][0]
+
+        if self.title_match(title, result_title):
+            if self.parent.logger:
+                self.parent.logger.debug(meta)
+
+            self.mark_time(t0)
+            return meta
+
+        self.mark_time(t0)
+        return None
+
+
+    def full_text_search (self, search_term):
+        """
+        search the Crossref API using a given term e.g. NHANES. 
+        Note that Crossref doesn't support exact string matching 
+        for multiple terms within strings.
+        See https://github.com/CrossRef/rest-api-doc/issues/143
+        """
+        t0 = time.time()
+
+        query = "query=%22{}%22/type/journal-article&rows=1000".format(urllib.parse.quote(search_term))
+        url = self.get_api_url(query)
+
+        response = requests.get(url).text
+        json_response = json.loads(response)
+        search_results = json_response["message"]
+
+        self.mark_time(t0)
+        return search_results
+
+
+class ScholInfra_PubMed (ScholInfra):
+    """
+    parse metadata returned from PubMed's Entrez API given a title
+    """
+
+    def title_search (self, title):
+        t0 = time.time()
+        
+        Entrez.email = self.parent.config["DEFAULT"]["email"]
+
+        handle = Entrez.read(Entrez.esearch(
+                db="pubmed",
+                retmax=100,
+                term="\"{}\"".format(title),
+                field = "title",
+                retmode = "xml"
+                ))
+        
+        search_id = handle["IdList"][0]
+        
+        fetch_result = Entrez.efetch(db="pubmed", id=search_id, retmode="xml")
+        data = fetch_result.read()
+        fetch_result.close()
+
+        xml = xmltodict.parse(data)
+        meta = json.loads(json.dumps(xml))
+        meta = meta["PubmedArticleSet"]["PubmedArticle"]
+
+        result_title = meta["MedlineCitation"]["Article"]["ArticleTitle"]
+
+        if self.title_match(title, result_title):
+            self.mark_time(t0)
+
+            if meta and len(meta) > 0:
+                return meta
+
+        self.mark_time(t0)
+        return None
 
 
 ######################################################################
@@ -519,7 +612,7 @@ class ScholInfra_SSRN (ScholInfra):
 class ScholInfraAPI:
     """
     API integrations for federating metadata lookup across multiple
-    scholarly infrastructure providers
+    discovery service APIs from scholarly infrastructure providers
     """
 
     def __init__ (self, config_file="rc.cfg", logger=None):
@@ -527,6 +620,15 @@ class ScholInfraAPI:
         self.config.read(config_file)
         self.logger = logger
 
+        # other initializations 
+        requests_cache.install_cache("richcontext")
+
+        self.crossref = ScholInfra_Crossref(
+            parent=self,
+            name="Crossref",
+            api_url ="https://api.crossref.org/works?{}"
+            )
+        
         self.europepmc = ScholInfra_EuropePMC(
             parent=self,
             name="EuropePMC",
@@ -537,6 +639,11 @@ class ScholInfraAPI:
             parent=self,
             name="OpenAIRE",
             api_url="http://api.openaire.eu/search/publications?title={}"
+            )
+
+        self.pubmed = ScholInfra_PubMed(
+            parent=self,
+            name="PubMed"
             )
 
         self.semantic = ScholInfra_SemanticScholar(
@@ -574,7 +681,6 @@ class ScholInfraAPI:
             name="SSRN",
             api_url ="https://doi.org/{}"
             )
-
 
 
 ######################################################################
