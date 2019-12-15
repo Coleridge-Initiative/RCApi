@@ -1,5 +1,12 @@
 # `richcontext.scholapi` changelog
 
+## 1.0.3
+
+2019-12-15
+
+  - resolved PyPi upload errors
+
+
 ## 1.0.2
 
 2019-12-15
