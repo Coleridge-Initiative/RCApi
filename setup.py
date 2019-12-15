@@ -5,6 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="richcontext-scholapi",
+    version="1.0.3",
     author="Coleridge Initiative",
     author_email="dataanalytics@coleridgeinitiative.org",
     description="Rich Context API integrations for federating discovery services and metadata exchange across multiple scholarly infrastructure providers",
