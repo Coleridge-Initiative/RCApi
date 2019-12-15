@@ -1,20 +1,26 @@
 # `richcontext.scholapi` changelog
 
+## 1.0.2
+
+2019-12-15
+
+  - added publication search and title search for Crossref, PubMed, SSRN
+  - improved defensive handling for: connection errors, null responses to API calls, returned error messages
+  - reduced Dimensions API excessive log statements (due to repeated logins)
+  - resolved errors in handling responses from EuropePMC
+
+
 ## 1.0.1
 
 2019-11-30
 
-### Fixed
-
-  * EuropePMC: resolved edge case where returned titles could be null, causing exceptions
+  - EuropePMC: resolved edge case where returned titles could be null, causing exceptions
 
 
 ## 1.0.0
 
 2019-11-23
 
-### Initial
-
-  * first release on PyPi
-  * supports `title_search()` and `publication_lookup()` using several discovery APIs for Scholarly Infrastructure
-  * aligned with Community session goals from 2019 Rich Context Workshop (notes by Samuel Klein)
+  - first release on PyPi
+  - supports `title_search()` and `publication_lookup()` using several discovery APIs for Scholarly Infrastructure
+  - aligned with Community session goals from 2019 Rich Context Workshop (notes by Samuel Klein)

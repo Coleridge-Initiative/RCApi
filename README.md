@@ -1,13 +1,14 @@
 # richcontext.scholapi
 
 [Rich Context](https://coleridgeinitiative.org/richcontext)
-API integrations for federating metadata discovery and exchange across
-multiple scholarly infrastructure providers.
+API integrations for federating discovery services and metadata
+exchange across multiple scholarly infrastructure providers.
 
 Development of the Rich Context knowledge graph uses this library to:
 
   * identify dataset links to research publications
   * locate open access publications
+  * reconcile journal references
   * reconcile author profiles
   * reconcile keyword mesh
 
@@ -22,9 +23,14 @@ Prerequisites:
 
 - [Python 3.x](https://www.python.org/downloads/)
 - [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- [Biopython.Entrez](https://biopython.org/)
+- [Crossref Commons](https://gitlab.com/crossref/crossref_commons_py)
 - [Dimensions CLI](https://github.com/digital-science/dimcli)
 - [Requests](https://2.python-requests.org/en/master/)
+- [Requests-Cache](https://github.com/reclosedev/requests-cache)
 - [Selenium](https://github.com/SeleniumHQ/selenium/)
+- [xmltodict](https://github.com/martinblech/xmltodict)
+
 
 To install from [PyPi](https://pypi.python.org/pypi/richcontext.scholapi):
 
@@ -45,12 +51,13 @@ and populate it with your credentials.
 NB: be careful not to commit the `rc.cfg` file in Git since it
 contains sensitive data such as passwords.
 
-Parameters needed in the configuration file include:
+Parameters used in the configuration file include:
 
 | parameter | value | 
 | --- | --- |
 | `chrome_exe_path` | path/to/chrome.exe |
 | `dimensions_password` | Dimensions API password |
+| `elsevier_api_key` | Elsvier API key |
 | `email` | personal email address |
 | `repec_token` | RePEc API token |
 
@@ -117,7 +124,7 @@ installed library.
 Then run unit tests for the APIs which do not require credentials:
 
 ```
-nose2 -v --pretty-assert
+python test.py
 ```
 
 
