@@ -592,18 +592,19 @@ class ScholInfra_PubMed (ScholInfra):
 
         xml = xmltodict.parse(data)
         meta = json.loads(json.dumps(xml))
-        meta = meta["PubmedArticleSet"]["PubmedArticle"]
+        if "PubmedArticle" in meta["PubmedArticleSet"]:
+            meta = meta["PubmedArticleSet"]["PubmedArticle"]
 
-        result_title = meta["MedlineCitation"]["Article"]["ArticleTitle"]
+            result_title = meta["MedlineCitation"]["Article"]["ArticleTitle"]
 
-        if self.title_match(title, result_title):
+            if self.title_match(title, result_title):
+                self.mark_time(t0)
+
+                if meta and len(meta) > 0:
+                    return meta
+
             self.mark_time(t0)
-
-            if meta and len(meta) > 0:
-                return meta
-
-        self.mark_time(t0)
-        return None
+            return None
 
 
 ######################################################################
