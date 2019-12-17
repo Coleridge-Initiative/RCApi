@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from richcontext import scholapi as rc_scholapi
+import pprint
 import unittest
 
    
@@ -31,7 +32,7 @@ class TestOpenAPIs (unittest.TestCase):
         meta = schol.crossref.publication_lookup(doi)
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1503/cmaj.170880")
+        self.assertTrue(meta["title"][0] == "Relation between household food insecurity and breastfeeding in Canada")
 
 
     def test_crossref_title_search (self):
@@ -41,7 +42,7 @@ class TestOpenAPIs (unittest.TestCase):
         meta = schol.crossref.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(meta["URL"] == "http://dx.doi.org/10.1177/0042098017740285")
+        self.assertTrue(meta["ISSN"][0] == "1556-5068")
 
 
     def test_crossref_fulltext_search (self):
@@ -51,7 +52,7 @@ class TestOpenAPIs (unittest.TestCase):
         search_results = schol.crossref.full_text_search(search_term)
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(search_results["total-results"] >= 884000)
+        self.assertTrue(search_results["total-results"] >= 877000)
 
 
     def test_pubmed_title_search (self):
