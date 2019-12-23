@@ -326,13 +326,16 @@ class ScholInfra_Dimensions (ScholInfra):
         return None
 
 
-    def full_text_search (self, search_term):
+    def full_text_search (self, search_term,exact_match = True):
         """
         parse metadata from a Dimensions API full-text search
         """
         t0 = time.time()
 
-        query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
+        # query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
+        query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
+        if exact_match == False:
+            query = 'search publications in full_data_exact for "{}" return publications[doi+title+journal] limit 1000'.format(search_term)
 
         self.login()
         response = self.run_query(query)
