@@ -2,6 +2,7 @@
 rc.cfg
 chromedriver
 chromedriver.exe
+richcontext.sqlite
 
 # Python compiled modules
 *.pyc

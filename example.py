@@ -13,7 +13,7 @@ import sys
 if __name__ == "__main__":
     # logging is optional: to debug, set the `logger` parameter
     # when initializing the `ScholInfraAPI` object
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
     logger = logging.getLogger("RichContext")
 
     # initialize the federated API access
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     # run it...
     meta = schol.europepmc.title_search(title)
+    print(meta)
 
     # report results
-    print(meta)
     print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))

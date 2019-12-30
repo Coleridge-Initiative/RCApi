@@ -37,13 +37,13 @@ class TestOpenAPIs (unittest.TestCase):
 
     def test_crossref_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
+        title = "Relation between household food insecurity and breastfeeding in Canada"
 
         meta = schol.crossref.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(meta["ISSN"][0] == "1556-5068")
-
+        self.assertTrue(meta["DOI"] == "10.1503/cmaj.170880")
+        
 
     def test_crossref_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
@@ -53,6 +53,16 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
         self.assertTrue(search_results["total-results"] >= 877000)
+
+
+    def test_pubmed_fulltext_id_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES"
+
+        meta = schol.pubmed.fulltext_id_search(search_term)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
+        self.assertTrue(len(meta) >= 6850)
 
 
     def test_pubmed_title_search (self):
@@ -73,26 +83,6 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.semantic.elapsed_time, schol.semantic.name))
         self.assertTrue(meta["url"] == "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907")
-
-
-    def test_ssrn_publication_lookup (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        doi = "10.2139/ssrn.2898991"
-
-        meta = schol.ssrn.publication_lookup(doi)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.ssrn.elapsed_time, schol.ssrn.name))
-        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])")
-
-
-    def test_ssrn_title_search (self):
-        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
-
-        meta = schol.ssrn.title_search(title)
-
-        print("\ntime: {:.3f} ms - {}".format(schol.ssrn.elapsed_time, schol.ssrn.name))
-        self.assertTrue(repr(meta) == "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])")
 
 
     def test_unpaywall_publication_lookup (self):
