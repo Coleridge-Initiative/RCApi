@@ -283,7 +283,8 @@ class ScholInfra_Dimensions (ScholInfra):
         if not self.api_obj:
             dimcli.login(
                 username=self.parent.config["DEFAULT"]["email"],
-                password=self.parent.config["DEFAULT"]["dimensions_password"]
+                password=self.parent.config["DEFAULT"]["dimensions_password"],
+                verbose=False
                 )
 
             self.api_obj = dimcli.Dsl(verbose=False)
@@ -331,8 +332,6 @@ class ScholInfra_Dimensions (ScholInfra):
         parse metadata from a Dimensions API full-text search
         """
         t0 = time.time()
-
-        # query = 'search publications in full_data for "\\"{}\\"" return publications[doi+title+journal]'.format(search_term)
         query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
         if exact_match == False:
             query = 'search publications in full_data_exact for "{}" return publications[doi+title+journal] limit 1000'.format(search_term)
@@ -610,56 +609,51 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def fulltext_id_search(self,search_term):
+    def fulltext_id_search (self, search_term):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
-        
         response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == 'pubmed'][0]["Count"])
+
         if response_count > 0:
-            handle = Entrez.read(Entrez.esearch(db="pubmed"
-                                                ,retmax=response_count
-                                                ,term="\"{}\"".format(search_term)
-                                            )
-                                )
+            handle = Entrez.read(Entrez.esearch(db="pubmed",
+                                                retmax=response_count,
+                                                term="\"{}\"".format(search_term)
+                                                )
+                                 )
 
             id_list = handle["IdList"]
-
             return id_list
         else:
-            print('Pubmed has no results for that search term.')
             return None
+
 
     def fulltext_search (self, search_term):
         t0 = time.time()
         
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-
         id_list  = fulltext_id_search(search_term)
         
         if id_list and len(id_list) > 0:
-
                 id_list = ",".join(id_list)
 
-                fetch_result = Entrez.efetch(db="pubmed"
-                                        ,id=id_list
-                                        ,retmode = "xml")
+                fetch_result = Entrez.efetch(db="pubmed",
+                                             id=id_list,
+                                             retmode = "xml"
+                                             )
 
                 data = fetch_result.read()
                 fetch_result.close()
 
                 xml = xmltodict.parse(data)
-
                 meta_list = json.loads(json.dumps(xml))
-
                 meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
 
                 self.mark_time(t0)
-
                 return meta
             
         else:
-            raise Exception('Input to fetch from Pubmed is not a list of IDs') 
+            raise Exception("Input to fetch from PubMed is not a list of IDs") 
         
 
 
