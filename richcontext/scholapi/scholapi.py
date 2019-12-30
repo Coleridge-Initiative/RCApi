@@ -610,6 +610,59 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
+    def fulltext_id_search(self,search_term):
+        Entrez.email = self.parent.config["DEFAULT"]["email"]
+
+        query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
+        
+        response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == 'pubmed'][0]["Count"])
+        if response_count > 0:
+            handle = Entrez.read(Entrez.esearch(db="pubmed"
+                                                ,retmax=response_count
+                                                ,term="\"{}\"".format(search_term)
+                                            )
+                                )
+
+            id_list = handle["IdList"]
+
+            return id_list
+        else:
+            print('Pubmed has no results for that search term.')
+            return None
+
+    def fulltext_search (self, search_term):
+        t0 = time.time()
+        
+        Entrez.email = self.parent.config["DEFAULT"]["email"]
+
+        id_list  = fulltext_id_search(search_term)
+        
+        if id_list and len(id_list) > 0:
+
+                id_list = ",".join(id_list)
+
+                fetch_result = Entrez.efetch(db="pubmed"
+                                        ,id=id_list
+                                        ,retmode = "xml")
+
+                data = fetch_result.read()
+                fetch_result.close()
+
+                xml = xmltodict.parse(data)
+
+                meta_list = json.loads(json.dumps(xml))
+
+                meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
+
+                self.mark_time(t0)
+
+                return meta
+            
+        else:
+            raise Exception('Input to fetch from Pubmed is not a list of IDs') 
+        
+
+
 ######################################################################
 ## federated API access
 

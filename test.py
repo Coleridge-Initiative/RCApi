@@ -40,10 +40,11 @@ class TestOpenAPIs (unittest.TestCase):
         title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
 
         meta = schol.crossref.title_search(title)
+        # print(meta["DOI"])
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
-        self.assertTrue(meta["ISSN"][0] == "1556-5068")
-
+        self.assertTrue(meta["DOI"] == "10.1177/0042098017740285")
+        
 
     def test_crossref_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
@@ -53,6 +54,18 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.crossref.elapsed_time, schol.crossref.name))
         self.assertTrue(search_results["total-results"] >= 877000)
+
+
+
+    def test_pubmed_fulltext_id_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES"
+
+        meta = schol.pubmed.fulltext_id_search(search_term)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
+        self.assertTrue(len(meta) >= 6850)
+
 
 
     def test_pubmed_title_search (self):
