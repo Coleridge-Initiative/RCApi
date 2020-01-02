@@ -2,7 +2,7 @@
 
 ## 1.0.4
 
-2020-01-??
+2020-01-02
 
   - resolved errors in PubMed fulltext search
   - Dimensions full text search now returns all fields
