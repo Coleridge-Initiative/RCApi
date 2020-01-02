@@ -75,6 +75,16 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta["MedlineCitation"]["PMID"]["#text"] == "29440401")
 
 
+    def test_pubmed_journal_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        issn = "1932-6203"
+
+        meta, message = schol.pubmed.journal_lookup(issn)
+
+        print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
+        self.assertTrue(meta["ISOAbbreviation"] == "PLoS ONE")
+
+
     def test_semantic_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1016/j.appet.2017.07.006"

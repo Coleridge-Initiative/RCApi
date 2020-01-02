@@ -1,5 +1,17 @@
 # `richcontext.scholapi` changelog
 
+## 1.0.4
+
+2020-01-??
+
+  - resolved errors in PubMed fulltext search
+  - Dimensions full text search now returns all fields
+  - Dimensions login verbose flag turned off
+  - added PubMed (NCBI) journal lookups via ISSN
+  - adding deterministic profiling tools
+  - improved unit tests
+
+
 ## 1.0.3
 
 2019-12-15
