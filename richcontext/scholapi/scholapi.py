@@ -9,12 +9,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+import cProfile
 import configparser
 import crossref_commons.retrieval
 import dimcli
 import json
+import io
 import logging
 import pprint
+import pstats
 import re
 import requests
 import requests_cache
@@ -656,6 +659,51 @@ class ScholInfra_PubMed (ScholInfra):
             raise Exception("Input to fetch from PubMed is not a list of IDs") 
         
 
+    def journal_lookup (self, issn):
+        """
+        use the NCBI discovery service for ISSN lookup
+        """
+        t0 = time.time()
+
+        try:
+            url = "https://www.ncbi.nlm.nih.gov/nlmcatalog/?report=xml&format=text&term={}".format(issn)
+            response = requests.get(url).text
+
+            soup = BeautifulSoup(response,  "html.parser")
+            xml = soup.find("pre").text.strip()
+
+            if len(xml) > 0:
+                ## use an XML hack to workaround common formatting
+                ## errors in the API respsonses from NCBI
+                xml = "<fix>{}</fix>".format(xml)
+                j = json.loads(json.dumps(xmltodict.parse(xml)))
+
+                if "NCBICatalogRecord" in j["fix"]:
+                    ncbi = j["fix"]["NCBICatalogRecord"]
+
+                    if isinstance(ncbi, list):
+                        if "JrXml" in ncbi[0]:
+                            # ibid., XML hack
+                            ncbi = ncbi[0]
+                        elif len(ncbi) > 1 and "JrXml" in ncbi[1]:
+                            ncbi = ncbi[1]
+                        else:
+                            # bad XML returned from the API call
+                            return None, f"NCBI bad XML format: no JrXML element for ISSN {issn}"
+
+                    meta = ncbi["JrXml"]["Serial"]
+                    #pprint.pprint(meta)
+
+                    self.mark_time(t0)
+                    return meta, None
+
+        except:
+            print(traceback.format_exc())
+            print(f"ERROR - NCBI failed lookup: {issn}")
+
+        self.mark_time(t0)
+        return None, None
+
 
 ######################################################################
 ## federated API access
@@ -732,6 +780,28 @@ class ScholInfraAPI:
             name="SSRN",
             api_url ="https://doi.org/{}"
             )
+
+
+    ## profiling utilities
+
+    def start_profiling (self):
+        """start profiling"""
+        pr = cProfile.Profile()
+        pr.enable()
+
+        return pr
+
+
+    def stop_profiling (self, pr):
+        """stop profiling and report"""
+        pr.disable()
+
+        s = io.StringIO()
+        sortby = "cumulative"
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+
+        ps.print_stats()
+        print(s.getvalue())
 
 
 ######################################################################
