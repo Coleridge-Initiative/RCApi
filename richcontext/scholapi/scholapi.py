@@ -173,8 +173,8 @@ class ScholInfra_OpenAIRE (ScholInfra):
         parse metadata from XML returned from the OpenAIRE API query
         """
         t0 = time.time()
+        url = self.get_api_url() + "title={}".format(urllib.parse.quote(title))
 
-        url = self.get_api_url(urllib.parse.quote(title))
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
 
@@ -196,6 +196,49 @@ class ScholInfra_OpenAIRE (ScholInfra):
 
         self.mark_time(t0)
         return None
+
+
+    def parse_oa (self, result):
+        if result.find("instancetype")["classname"] in ["Other literature type", "Article"]:
+            meta = OrderedDict()
+            result_title = self.get_xml_node_value(result, "title")
+            meta["title"] = result_title
+            if self.get_xml_node_value(result, "journal"):
+                meta["journal"] = self.get_xml_node_value(result, "journal")
+            meta["url"] = self.get_xml_node_value(result, "url")
+            meta["authors"] = [a.text for a in result.find_all("creator")]
+            meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+            # meta_list.append(meta)
+            return meta
+
+    def full_text_search (self, search_term,nresults = None):
+        """
+        parse metadata from XML returned from the OpenAIRE API query
+        """
+        t0 = time.time()
+        base_url = self.get_api_url() + "keywords={}".format(urllib.parse.quote(search_term))
+        
+        if nresults:
+            search_url = base_url + '&size={}'.format(nresults)
+
+        elif not nresults:
+            response = requests.get(base_url).text
+            soup = BeautifulSoup(response,  "html.parser")
+            nresults_response = int(soup.find("total").text)
+            search_url = base_url + '&size={}'.format(nresults_response)
+        
+        response = requests.get(search_url).text
+        soup = BeautifulSoup(response,  "html.parser")
+        pub_metadata = soup.find_all("oaf:result")
+        
+        
+        if len(pub_metadata) > 0:
+            self.mark_time(t0)
+            return pub_metadata
+        
+        else:
+            return None
+
 
 
 class ScholInfra_SemanticScholar (ScholInfra):
@@ -328,16 +371,41 @@ class ScholInfra_Dimensions (ScholInfra):
 
         self.mark_time(t0)
         return None
+    
+    def parse_dimensions(self, result):
+        if result["type"] in ["article","preprint"]:
+            meta = OrderedDict()
+            meta["title"] = result["title"]
+            try:
+                meta["journal"] = result["journal"]["title"]
+            except:
+                pass
+            try:
+                meta["doi"] = result["doi"]
+            except:
+                pass
+            try:
+                author_list = result["authors"]
+                meta["authors"] = [b["last_name"] + ", " + b["first_name"] for b in author_list]
+            except:
+                pass
+            return meta
+        else:
+            return None
 
-
-    def full_text_search (self, search_term,exact_match = True):
+    def full_text_search (self, search_term, exact_match = True, nresults = None):
         """
         parse metadata from a Dimensions API full-text search
         """
         t0 = time.time()
-        query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
-        if exact_match == False:
-            query = 'search publications in full_data_exact for "{}" return publications[doi+title+journal] limit 1000'.format(search_term)
+        if not nresults:
+            query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
+            if exact_match == False:
+                query = 'search publications in full_data_exact for "{}" return publications[all] limit 1000'.format(search_term)
+        if nresults:
+            query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit {}'.format(search_term,nresults)
+            if exact_match == False:
+                query = 'search publications in full_data_exact for "{}" return publications[all] limit {}'.format(search_term,nresults)
 
         self.login()
         response = self.run_query(query)
@@ -612,32 +680,68 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def fulltext_id_search (self, search_term):
+    def fulltext_id_search (self, search_term, nresults = None):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-
+        
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
         response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == 'pubmed'][0]["Count"])
 
         if response_count > 0:
-            handle = Entrez.read(Entrez.esearch(db="pubmed",
-                                                retmax=response_count,
-                                                term="\"{}\"".format(search_term)
-                                                )
-                                 )
+            if nresults == None:
+                handle = Entrez.read(Entrez.esearch(db="pubmed",
+                                                    retmax=response_count,
+                                                    term="\"{}\"".format(search_term)
+                                                    )
+                                    )
 
-            id_list = handle["IdList"]
+                id_list = handle["IdList"]
+            if nresults != None and nresults > 0 and isinstance(nresults, int):
+                handle = Entrez.read(Entrez.esearch(db="pubmed",
+                                                    retmax=nresults,
+                                                    term="\"{}\"".format(search_term)
+                                                    )
+                                    )
+
+                id_list = handle["IdList"]
             return id_list
+            
         else:
             return None
 
+    def parse_pubmed(self, result):
+        article_meta = result["MedlineCitation"]["Article"]
+        meta = OrderedDict()
+        meta["title"] = article_meta["ArticleTitle"]
+        meta["journal"] = article_meta["Journal"]["Title"]
+        try:
+            if isinstance(article_meta["AuthorList"]["Author"],list):
+                meta["authors"] = [a["LastName"]+ ", " + a["ForeName"] for a in article_meta["AuthorList"]["Author"]]
+            if isinstance(article_meta["AuthorList"]["Author"],dict):
+                        meta["authors"] = article_meta["AuthorList"]["Author"]["LastName"]+ "," + article_meta["AuthorList"]["Author"]["ForeName"]
+        except:
+            meta["authors"] = ''
+        try:
+            pid_list = article_meta["ELocationID"]    
+            if isinstance(pid_list,list):
+                    doi_test = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                    if len(doi_test) > 0:
+                        meta["doi"] = doi_test[0]
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                    meta["doi"] = pid_list["#text"]
+        except:
+            pass
+        return meta
 
-    def fulltext_search (self, search_term):
+
+    def full_text_search (self, search_term, nresults = None):
         t0 = time.time()
-        
+
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-        id_list  = fulltext_id_search(search_term)
+        id_list  = self.fulltext_id_search(search_term=search_term,nresults = nresults)
         
-        if id_list and len(id_list) > 0:
+        if id_list:
+            if len(id_list) > 0:
                 id_list = ",".join(id_list)
 
                 fetch_result = Entrez.efetch(db="pubmed",
@@ -649,15 +753,15 @@ class ScholInfra_PubMed (ScholInfra):
                 fetch_result.close()
 
                 xml = xmltodict.parse(data)
-                meta_list = json.loads(json.dumps(xml))
-                meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
-
+                meta_raw = json.loads(json.dumps(xml))
+                meta_full = meta_raw["PubmedArticleSet"]["PubmedArticle"]
+                
                 self.mark_time(t0)
-                return meta
-            
+
+                return meta_full
+                
         else:
-            raise Exception("Input to fetch from PubMed is not a list of IDs") 
-        
+            return None
 
     def journal_lookup (self, issn):
         """
@@ -737,7 +841,7 @@ class ScholInfraAPI:
         self.openaire = ScholInfra_OpenAIRE(
             parent=self,
             name="OpenAIRE",
-            api_url="http://api.openaire.eu/search/publications?title={}"
+            api_url="http://api.openaire.eu/search/publications?"
             )
 
         self.pubmed = ScholInfra_PubMed(
