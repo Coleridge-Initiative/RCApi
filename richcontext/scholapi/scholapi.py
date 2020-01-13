@@ -649,7 +649,7 @@ class ScholInfra_PubMed (ScholInfra):
         t0 = time.time()
         
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-        id_list  = fulltext_id_search(search_term)
+        id_list = self.fulltext_id_search(search_term)
         
         if id_list and len(id_list) > 0:
                 id_list = ",".join(id_list)
