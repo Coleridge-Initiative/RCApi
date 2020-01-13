@@ -330,17 +330,20 @@ class ScholInfra_Dimensions (ScholInfra):
         return None
 
 
-    def full_text_search (self, search_term,exact_match = True,nresults = None):
+    def full_text_search (self, search_term, exact_match = True, nresults = None):
         """
         parse metadata from a Dimensions API full-text search
         """
         t0 = time.time()
         if not nresults:
             query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
+
             if exact_match == False:
                 query = 'search publications in full_data_exact for "{}" return publications[all] limit 1000'.format(search_term)
+
         if nresults:
             query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit {}'.format(search_term,nresults)
+
             if exact_match == False:
                 query = 'search publications in full_data_exact for "{}" return publications[all] limit {}'.format(search_term,nresults)
 
@@ -621,7 +624,8 @@ class ScholInfra_PubMed (ScholInfra):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
-        response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == 'pubmed'][0]["Count"])
+        response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == "pubmed"][0]["Count"])
+
         if response_count > 0:
             if nresults == None:
                 handle = Entrez.read(Entrez.esearch(db="pubmed",
@@ -631,6 +635,7 @@ class ScholInfra_PubMed (ScholInfra):
                                     )
 
                 id_list = handle["IdList"]
+
             if nresults != None and nresults > 0 and isinstance(nresults, int):
                 handle = Entrez.read(Entrez.esearch(db="pubmed",
                                                     retmax=nresults,
