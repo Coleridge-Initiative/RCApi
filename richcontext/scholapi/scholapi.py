@@ -359,7 +359,8 @@ class ScholInfra_Dimensions (ScholInfra):
         """
         t0 = time.time()
         if not nresults:
-        
+            query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
+
             if exact_match == False:
                 query = 'search publications in full_data_exact for "{}" return publications[all] limit 1000'.format(search_term)
     
@@ -643,7 +644,7 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def full_text_id_search (self, search_term, nresults = None):
+    def fulltext_id_search (self, search_term, nresults = None):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
@@ -679,7 +680,7 @@ class ScholInfra_PubMed (ScholInfra):
         t0 = time.time()
         
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-        id_list = self.full_text_id_search(search_term)
+        id_list = self.fulltext_id_search(search_term)
         
         if id_list and len(id_list) > 0:
                 id_list = ",".join(id_list)
