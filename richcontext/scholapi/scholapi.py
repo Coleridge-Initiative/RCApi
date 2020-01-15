@@ -346,7 +346,6 @@ class ScholInfra_Dimensions (ScholInfra):
                     self.mark_time(t0)
 
                     if len(meta) > 0:
-                        self.mark_time(t0)
                         return meta
 
         self.mark_time(t0)
