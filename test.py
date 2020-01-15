@@ -23,7 +23,15 @@ class TestOpenAPIs (unittest.TestCase):
 
         print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
         self.assertTrue(repr(meta) == "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])")
+    
+    def test_openaire_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES"
+        
+        meta = schol.openaire.full_text_search(search_term)
 
+        print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
+        self.assertTrue(len(meta) >= 3300)
 
     def test_crossref_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
@@ -59,7 +67,7 @@ class TestOpenAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         search_term = "NHANES"
 
-        meta = schol.pubmed.fulltext_id_search(search_term)
+        meta = schol.pubmed.full_text_id_search(search_term)
 
         print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
         self.assertTrue(len(meta) >= 6850)
