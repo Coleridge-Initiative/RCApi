@@ -197,6 +197,25 @@ class ScholInfra_OpenAIRE (ScholInfra):
         self.mark_time(t0)
         return None
 
+
+    
+    def parse_oa (self, result):
+        if result.find("instancetype")["classname"] in ["Other literature type", "Article"]:
+            meta = OrderedDict()
+            result_title = self.get_xml_node_value(result, "title")
+            meta["title"] = result_title
+            if self.get_xml_node_value(result, "journal"):
+                meta["journal"] = self.get_xml_node_value(result, "journal")
+            meta["url"] = self.get_xml_node_value(result, "url")
+            meta["authors"] = [a.text for a in result.find_all("creator")]
+            doi_list = result.find_all("pid",  {"classid": "doi"})
+            if len(doi_list) > 0:
+                meta["doi"] = doi_list[0].text
+            meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+            return meta
+        else:
+            return None
+
     def full_text_search (self, search_term,nresults = None):
         """
         parse metadata from XML returned from the OpenAIRE API query
@@ -350,7 +369,27 @@ class ScholInfra_Dimensions (ScholInfra):
 
         self.mark_time(t0)
         return None
-
+    def parse_dimensions(self, result):
+        if result["type"] in ["article","preprint"]:
+            meta = OrderedDict()
+            meta["title"] = result["title"]
+            try:
+                meta["journal"] = result["journal"]["title"]
+            except:
+                pass
+            try:
+                meta["doi"] = result["doi"]
+            except:
+                pass
+            try:
+                author_list = result["authors"]
+                meta["authors"] = [b["last_name"] + ", " + b["first_name"] for b in author_list]
+            except:
+                pass
+            return meta
+        else:
+            return None
+            
 
     def full_text_search (self, search_term, exact_match = True, nresults = None):
         """
@@ -642,7 +681,30 @@ class ScholInfra_PubMed (ScholInfra):
             self.mark_time(t0)
             return None
 
-
+    def parse_pubmed(self, result):
+        article_meta = result["MedlineCitation"]["Article"]
+        meta = OrderedDict()
+        meta["title"] = article_meta["ArticleTitle"]
+        meta["journal"] = article_meta["Journal"]["Title"]
+        try:
+            if isinstance(article_meta["AuthorList"]["Author"],list):
+                meta["authors"] = [a["LastName"]+ ", " + a["ForeName"] for a in article_meta["AuthorList"]["Author"]]
+            if isinstance(article_meta["AuthorList"]["Author"],dict):
+                        meta["authors"] = article_meta["AuthorList"]["Author"]["LastName"]+ "," + article_meta["AuthorList"]["Author"]["ForeName"]
+        except:
+            meta["authors"] = ''
+        try:
+            pid_list = article_meta["ELocationID"]    
+            if isinstance(pid_list,list):
+                    doi_test = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                    if len(doi_test) > 0:
+                        meta["doi"] = doi_test[0]
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                    meta["doi"] = pid_list["#text"]
+        except:
+            pass
+        return meta
     def fulltext_id_search (self, search_term, nresults = None):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
