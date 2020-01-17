@@ -174,7 +174,7 @@ class ScholInfra_OpenAIRE (ScholInfra):
         """
         t0 = time.time()
 
-        url = self.get_api_url(urllib.parse.quote(title))
+        url = self.get_api_url() + "title={}".format(urllib.parse.quote(title))
         response = requests.get(url).text
         soup = BeautifulSoup(response,  "html.parser")
 
@@ -197,6 +197,42 @@ class ScholInfra_OpenAIRE (ScholInfra):
         self.mark_time(t0)
         return None
 
+    def parse_oa (self, result):
+        if result.find("instancetype")["classname"] in ["Other literature type", "Article"]:
+            meta = OrderedDict()
+            result_title = self.get_xml_node_value(result, "title")
+            meta["title"] = result_title
+            if self.get_xml_node_value(result, "journal"):
+                meta["journal"] = self.get_xml_node_value(result, "journal")
+            meta["url"] = self.get_xml_node_value(result, "url")
+            meta["authors"] = [a.text for a in result.find_all("creator")]
+            meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+            return meta
+        else:
+            return None
+
+    def full_text_search (self, search_term,nresults = None):
+        """
+        parse metadata from XML returned from the OpenAIRE API query
+        """
+        t0 = time.time()
+        base_url = self.get_api_url() + "keywords={}".format(urllib.parse.quote(search_term))
+        
+        if nresults:
+            search_url = base_url + '&size={}'.format(nresults)
+
+        elif not nresults:
+            response = requests.get(base_url).text
+            soup = BeautifulSoup(response,  "html.parser")
+            nresults_response = int(soup.find("total").text)
+            search_url = base_url + '&size={}'.format(nresults_response)
+        
+        response = requests.get(search_url).text
+        soup = BeautifulSoup(response,  "html.parser")
+        pub_metadata = soup.find_all("oaf:result")
+        self.mark_time(t0)
+        return pub_metadata
+    
 
 class ScholInfra_SemanticScholar (ScholInfra):
     """
@@ -324,11 +360,32 @@ class ScholInfra_Dimensions (ScholInfra):
                     self.mark_time(t0)
 
                     if len(meta) > 0:
+                        self.mark_time(t0)
                         return meta
 
         self.mark_time(t0)
         return None
 
+    def parse_dimensions(self, result):
+        if result["type"] in ["article","preprint"]:
+            meta = OrderedDict()
+            meta["title"] = result["title"]
+            try:
+                meta["journal"] = result["journal"]["title"]
+            except:
+                pass
+            try:
+                meta["doi"] = result["doi"]
+            except:
+                pass
+            try:
+                author_list = result["authors"]
+                meta["authors"] = [b["last_name"] + ", " + b["first_name"] for b in author_list]
+            except:
+                pass
+            return meta
+        else:
+            return None
 
     def full_text_search (self, search_term, exact_match = True, nresults = None):
         """
@@ -350,10 +407,10 @@ class ScholInfra_Dimensions (ScholInfra):
         self.login()
         response = self.run_query(query)
         search_results = response.publications
-
+        
         self.mark_time(t0)
         return search_results
-
+        
 
 class ScholInfra_RePEc (ScholInfra):
     """
@@ -620,7 +677,7 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def fulltext_id_search (self, search_term, nresults = None):
+    def full_text_id_search (self, search_term):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
@@ -649,12 +706,36 @@ class ScholInfra_PubMed (ScholInfra):
         else:
             return None
 
+    def parse_pubmed(self, result):
+        article_meta = result["MedlineCitation"]["Article"]
+        meta = OrderedDict()
+        meta["title"] = article_meta["ArticleTitle"]
+        meta["journal"] = article_meta["Journal"]["Title"]
+        try:
+            if isinstance(article_meta["AuthorList"]["Author"],list):
+                meta["authors"] = [a["LastName"]+ ", " + a["ForeName"] for a in article_meta["AuthorList"]["Author"]]
+            if isinstance(article_meta["AuthorList"]["Author"],dict):
+                        meta["authors"] = article_meta["AuthorList"]["Author"]["LastName"]+ "," + article_meta["AuthorList"]["Author"]["ForeName"]
+        except:
+            meta["authors"] = ''
+        try:
+            pid_list = article_meta["ELocationID"]    
+            if isinstance(pid_list,list):
+                    doi_test = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                    if len(doi_test) > 0:
+                        meta["doi"] = doi_test[0]
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                    meta["doi"] = pid_list["#text"]
+        except:
+            pass
+        return meta
 
-    def full_text_search (self, search_term, nresults = None):
+    def full_text_search (self, search_term):
         t0 = time.time()
         
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-        id_list = self.fulltext_id_search(search_term)
+        id_list  = self.full_text_id_search(search_term)
         
         if id_list and len(id_list) > 0:
                 id_list = ",".join(id_list)
@@ -670,14 +751,11 @@ class ScholInfra_PubMed (ScholInfra):
                 xml = xmltodict.parse(data)
                 meta_list = json.loads(json.dumps(xml))
                 meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
-
+                
                 self.mark_time(t0)
                 return meta
-            
-        else:
-            raise Exception("Input to fetch from PubMed is not a list of IDs") 
-        
 
+                        
     def journal_lookup (self, issn):
         """
         use the NCBI discovery service for ISSN lookup
@@ -756,7 +834,7 @@ class ScholInfraAPI:
         self.openaire = ScholInfra_OpenAIRE(
             parent=self,
             name="OpenAIRE",
-            api_url="http://api.openaire.eu/search/publications?title={}"
+            api_url="http://api.openaire.eu/search/publications?"
             )
 
         self.pubmed = ScholInfra_PubMed(

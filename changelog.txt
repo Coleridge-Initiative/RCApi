@@ -1,5 +1,14 @@
 # `richcontext.scholapi` changelog
 
+## 1.0.5
+
+2020-01-??
+
+  - added an `nresults` parameter to full text search functions to control the number of search results. Default value is the max # returns for each API -- 1000 for Dimensions, as many as exist for PubMed.
+
+  - updated `requirements.txt` for newer version of `dimcli` for the verbose flag in Dimensions login
+
+
 ## 1.0.4
 
 2020-01-02
