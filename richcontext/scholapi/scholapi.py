@@ -677,7 +677,7 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def full_text_id_search (self, search_term):
+    def full_text_id_search (self, search_term, nresults):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
