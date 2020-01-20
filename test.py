@@ -67,10 +67,10 @@ class TestOpenAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         search_term = "NHANES"
 
-        meta = schol.pubmed.full_text_id_search(search_term)
+        meta = schol.pubmed.full_text_id_search(search_term, nresults=1000)
 
         print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
-        self.assertTrue(len(meta) >= 6850)
+        self.assertTrue(len(meta) == 1000)
 
 
     def test_pubmed_title_search (self):
