@@ -105,7 +105,7 @@ class ScholInfra_EuropePMC (ScholInfra):
             url = self.get_api_url(urllib.parse.quote(title))
             response = requests.get(url).text
 
-            soup = BeautifulSoup(response,  "html.parser")
+            soup = BeautifulSoup(response, "html.parser")
 
             if self.parent.logger:
                 self.parent.logger.debug(soup.prettify())
@@ -176,7 +176,7 @@ class ScholInfra_OpenAIRE (ScholInfra):
 
         url = self.get_api_url() + "title={}".format(urllib.parse.quote(title))
         response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
+        soup = BeautifulSoup(response, "html.parser")
 
         if self.parent.logger:
             self.parent.logger.debug(soup.prettify())
@@ -189,7 +189,7 @@ class ScholInfra_OpenAIRE (ScholInfra):
             if self.title_match(title, result_title):
                 meta["url"] = self.get_xml_node_value(result, "url")
                 meta["authors"] = [a.text for a in result.find_all("creator")]
-                meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
+                meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
                 self.mark_time(t0)
                 return meta
@@ -197,39 +197,26 @@ class ScholInfra_OpenAIRE (ScholInfra):
         self.mark_time(t0)
         return None
 
-    def parse_oa (self, result):
-        if result.find("instancetype")["classname"] in ["Other literature type", "Article"]:
-            meta = OrderedDict()
-            result_title = self.get_xml_node_value(result, "title")
-            meta["title"] = result_title
-            if self.get_xml_node_value(result, "journal"):
-                meta["journal"] = self.get_xml_node_value(result, "journal")
-            meta["url"] = self.get_xml_node_value(result, "url")
-            meta["authors"] = [a.text for a in result.find_all("creator")]
-            meta["open"] = len(result.find_all("bestaccessright",  {"classid": "OPEN"})) > 0
-            return meta
-        else:
-            return None
 
-    def full_text_search (self, search_term,nresults = None):
+    def full_text_search (self, search_term, limit=None):
         """
         parse metadata from XML returned from the OpenAIRE API query
         """
         t0 = time.time()
         base_url = self.get_api_url() + "keywords={}".format(urllib.parse.quote(search_term))
         
-        if nresults:
-            search_url = base_url + '&size={}'.format(nresults)
-
-        elif not nresults:
+        if limit:
+            search_url = base_url + "&size={}".format(limit)
+        else:
             response = requests.get(base_url).text
-            soup = BeautifulSoup(response,  "html.parser")
-            nresults_response = int(soup.find("total").text)
-            search_url = base_url + '&size={}'.format(nresults_response)
+            soup = BeautifulSoup(response, "html.parser")
+            limit_response = int(soup.find("total").text)
+            search_url = base_url + "&size={}".format(limit_response)
         
         response = requests.get(search_url).text
-        soup = BeautifulSoup(response,  "html.parser")
+        soup = BeautifulSoup(response, "html.parser")
         pub_metadata = soup.find_all("oaf:result")
+
         self.mark_time(t0)
         return pub_metadata
     
@@ -250,7 +237,7 @@ class ScholInfra_SemanticScholar (ScholInfra):
 
         self.mark_time(t0)
 
-        if meta and len(meta) > 0:
+        if meta and len(meta) > 0 and "error" not in meta:
             return meta
         else:
             return None
@@ -274,7 +261,7 @@ class ScholInfra_Unpaywall (ScholInfra):
 
         self.mark_time(t0)
 
-        if meta and len(meta) > 0:
+        if meta and len(meta) > 0 and "error" not in meta:
             return meta
         else:
             return None
@@ -297,12 +284,11 @@ class ScholInfra_dissemin (ScholInfra):
 
             self.mark_time(t0)
 
-            if len(meta) < 1:
-                return None
-            elif "error" in meta:
-                raise Exception(str(meta))
-            else:
+            if meta and len(meta) > 0 and "error" not in meta:
                 return meta
+            else:
+                return None
+
         except:
             print(traceback.format_exc())
             print("ERROR: {}".format(identifier))
@@ -343,7 +329,7 @@ class ScholInfra_Dimensions (ScholInfra):
         """
         t0 = time.time()
 
-        enc_title = title.replace('"', '\\"')
+        enc_title = title.replace('"', '').replace(":", " ").strip()
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
         self.login()
@@ -366,43 +352,24 @@ class ScholInfra_Dimensions (ScholInfra):
         self.mark_time(t0)
         return None
 
-    def parse_dimensions(self, result):
-        if result["type"] in ["article","preprint"]:
-            meta = OrderedDict()
-            meta["title"] = result["title"]
-            try:
-                meta["journal"] = result["journal"]["title"]
-            except:
-                pass
-            try:
-                meta["doi"] = result["doi"]
-            except:
-                pass
-            try:
-                author_list = result["authors"]
-                meta["authors"] = [b["last_name"] + ", " + b["first_name"] for b in author_list]
-            except:
-                pass
-            return meta
-        else:
-            return None
 
-    def full_text_search (self, search_term, exact_match = True, nresults = None):
+    def full_text_search (self, search_term, limit=None, exact_match=True):
         """
         parse metadata from a Dimensions API full-text search
         """
         t0 = time.time()
-        if not nresults:
+
+        if not limit:
             query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit 1000'.format(search_term)
 
             if exact_match == False:
                 query = 'search publications in full_data_exact for "{}" return publications[all] limit 1000'.format(search_term)
 
-        if nresults:
-            query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit {}'.format(search_term,nresults)
+        else:
+            query = 'search publications in full_data_exact for "\\"{}\\"" return publications[all] limit {}'.format(search_term,limit)
 
             if exact_match == False:
-                query = 'search publications in full_data_exact for "{}" return publications[all] limit {}'.format(search_term,nresults)
+                query = 'search publications in full_data_exact for "{}" return publications[all] limit {}'.format(search_term,limit)
 
         self.login()
         response = self.run_query(query)
@@ -433,7 +400,7 @@ class ScholInfra_RePEc (ScholInfra):
 
         url = self.get_cgi_url(title)
         response = requests.get(url).text
-        soup = BeautifulSoup(response,  "html.parser")
+        soup = BeautifulSoup(response, "html.parser")
 
         if self.parent.logger:
             self.parent.logger.debug(soup.prettify())
@@ -677,14 +644,14 @@ class ScholInfra_PubMed (ScholInfra):
             return None
 
 
-    def full_text_id_search (self, search_term, nresults):
+    def full_text_id_search (self, search_term, limit=None):
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
         response_count = int([d for d in query_return["eGQueryResult"] if d["DbName"] == "pubmed"][0]["Count"])
 
         if response_count > 0:
-            if nresults == None:
+            if limit == None:
                 handle = Entrez.read(Entrez.esearch(db="pubmed",
                                                     retmax=response_count,
                                                     term="\"{}\"".format(search_term)
@@ -693,9 +660,9 @@ class ScholInfra_PubMed (ScholInfra):
 
                 id_list = handle["IdList"]
 
-            if nresults != None and nresults > 0 and isinstance(nresults, int):
+            if limit != None and limit > 0 and isinstance(limit, int):
                 handle = Entrez.read(Entrez.esearch(db="pubmed",
-                                                    retmax=nresults,
+                                                    retmax=limit,
                                                     term="\"{}\"".format(search_term)
                                                     )
                                     )
@@ -706,30 +673,6 @@ class ScholInfra_PubMed (ScholInfra):
         else:
             return None
 
-    def parse_pubmed(self, result):
-        article_meta = result["MedlineCitation"]["Article"]
-        meta = OrderedDict()
-        meta["title"] = article_meta["ArticleTitle"]
-        meta["journal"] = article_meta["Journal"]["Title"]
-        try:
-            if isinstance(article_meta["AuthorList"]["Author"],list):
-                meta["authors"] = [a["LastName"]+ ", " + a["ForeName"] for a in article_meta["AuthorList"]["Author"]]
-            if isinstance(article_meta["AuthorList"]["Author"],dict):
-                        meta["authors"] = article_meta["AuthorList"]["Author"]["LastName"]+ "," + article_meta["AuthorList"]["Author"]["ForeName"]
-        except:
-            meta["authors"] = ''
-        try:
-            pid_list = article_meta["ELocationID"]    
-            if isinstance(pid_list,list):
-                    doi_test = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
-                    if len(doi_test) > 0:
-                        meta["doi"] = doi_test[0]
-            if isinstance(pid_list,dict):
-                if pid_list["@EIdType"] == "doi":
-                    meta["doi"] = pid_list["#text"]
-        except:
-            pass
-        return meta
 
     def full_text_search (self, search_term):
         t0 = time.time()
@@ -766,7 +709,7 @@ class ScholInfra_PubMed (ScholInfra):
             url = "https://www.ncbi.nlm.nih.gov/nlmcatalog/?report=xml&format=text&term={}".format(issn)
             response = requests.get(url).text
 
-            soup = BeautifulSoup(response,  "html.parser")
+            soup = BeautifulSoup(response, "html.parser")
             xml = soup.find("pre").text.strip()
 
             if len(xml) > 0:
