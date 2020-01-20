@@ -329,7 +329,7 @@ class ScholInfra_Dimensions (ScholInfra):
         """
         t0 = time.time()
 
-        enc_title = title.replace('"', '\\"')
+        enc_title = title.replace('"', '').replace(":", " ").strip()
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
         self.login()
