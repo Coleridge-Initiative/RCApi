@@ -2,11 +2,13 @@
 
 ## 1.0.5
 
-2020-01-??
+2020-01-20
 
-  - added an `nresults` parameter to full text search functions to control the number of search results. Default value is the max # returns for each API -- 1000 for Dimensions, as many as exist for PubMed.
+  - added an `limit` parameter to full text search functions to control the number of search results. Default value is the max # returns for each API -- 1000 for Dimensions, OpenAIRE, PubMed
 
   - updated `requirements.txt` for newer version of `dimcli` for the verbose flag in Dimensions login
+
+  - improved error handling for "publication not found" among several APIs
 
 
 ## 1.0.4
