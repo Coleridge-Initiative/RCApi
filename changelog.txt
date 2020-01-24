@@ -1,5 +1,18 @@
 # `richcontext.scholapi` changelog
 
+## 1.1.0
+
+2020-01-??
+
+  - *THIS RELEASE WILL BREAK MANY THINGS*
+
+  - moved all non-API classes and functions to be private
+
+  - each public method returns `meta, timing, message`
+
+  - reentrant calls: performance timing can be performed with mulitple workers (e.g., Ray)
+
+
 ## 1.0.5
 
 2020-01-20
