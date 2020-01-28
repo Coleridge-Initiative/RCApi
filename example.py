@@ -28,12 +28,16 @@ if __name__ == "__main__":
     issn = "1932-6203"
 
     # run it...
-    #meta = schol.europepmc.title_search(title)
-    meta, message = schol.pubmed.journal_lookup(issn)
-    print(meta)
+    #meta, timing, message = schol.europepmc.title_search(title)
+    meta, timing, message = schol.pubmed.journal_lookup(issn)
 
-    # report results
-    print("\ntime: {:.3f} ms - {}".format(schol.pubmed.elapsed_time, schol.pubmed.name))
+    if message:
+        # error case
+        print(message)
+    else:
+        # report results
+        print(meta)
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.pubmed.name))
 
     # report profiling
     #schol.stop_profiling(pr)

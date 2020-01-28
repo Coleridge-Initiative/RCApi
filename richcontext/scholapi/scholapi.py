@@ -28,7 +28,7 @@ import urllib.parse
 import xmltodict
 
 
-class ScholInfra:
+class _ScholInfra:
     """
     methods for accessing a specific Scholarly Infrastructure API
     """
@@ -38,12 +38,27 @@ class ScholInfra:
         self.name = name
         self.api_url = api_url
         self.cgi_url = cgi_url
-
         self.api_obj = None
-        self.elapsed_time = 0.0
 
 
-    def get_xml_node_value (self, root, name):
+    def _get_api_url (self, *args):
+        """
+        construct a URL to query the API
+        """
+        return self.api_url.format(*args)
+
+
+    @classmethod
+    def _mark_elapsed_time (cls, t0):
+        """
+        mark the elapsed time since the start of the API access method
+        """
+        t1 = time.time()
+        return (t1 - t0) * 1000.0
+
+
+    @classmethod
+    def _get_xml_node_value (cls, root, name):
         """
         return the named value from an XML node, if it exists
         """
@@ -57,7 +72,8 @@ class ScholInfra:
             return node.text.strip()
 
 
-    def clean_title (self, title):
+    @classmethod
+    def _clean_title (cls, title):
         """
         minimal set of string transformations so that a title can be
         compared consistently across API providers
@@ -65,32 +81,116 @@ class ScholInfra:
         return re.sub("\s+", " ", title.strip(" \"'?!.,")).lower()
 
 
-    def title_match (self, title0, title1):
+    @classmethod
+    def title_match (cls, title0, title1):
         """
         within reason, do the two titles match?
         """
         if not title0 or not title1:
             return False
         else:
-            return self.clean_title(title0) == self.clean_title(title1)
+            return cls._clean_title(title0) == cls._clean_title(title1)
 
 
-    def get_api_url (self, *args):
+    def full_text_search (self, search_term, limit=None, exact_match=True):
         """
-        construct a URL to query the API
+        Perform a full-text search for publications using the API for
+        one of the discovery services. Parse the returned metadata
+        while measuring the performance of API responses. Also, trap
+        and report errors in consistent ways.
+
+        :param search_term: Query terms for full-text search of publications.
+        :type search_term: str.
+
+        :param limit: Maximum number of search responses to return.
+        :type limit: int.
+
+        :param exact_match: Some APIs allow a flag to turn off exact matches.
+        :type limit: bool.
+
+        :returns: tuple (meta, timing, message)
+            - meta - JSON list of search results.
+            - timing - elasped system time in seconds.
+            - message - an optional error message.
         """
-        return self.api_url.format(*args)
+        meta = None
+        timing = 0.0
+        message = None
+
+        return meta, timing, message
 
 
-    def mark_time (self, t0):
+    def title_search (self, title):
         """
-        mark the elapsed time since the start of the API access method
+        Attempt to locate metadata for a publication based on its
+        title, using the API for one of the discovery services. Parse
+        the returned metadata while measuring the performance of API
+        responses. Also, trap and report errors in consistent ways.
+
+        :param title: Query term to locate a specific publications.
+        :type title: str.
+
+        :returns: tuple (meta, timing, message)
+            - meta - JSON list of search results.
+            - timing - elasped system time in milliseconds.
+            - message - an optional error message.
         """
-        t1 = time.time()
-        self.elapsed_time = (t1 - t0) * 1000.0
+        meta = None
+        timing = 0.0
+        message = None
+
+        return meta, timing, message
 
 
-class ScholInfra_EuropePMC (ScholInfra):
+    def publication_lookup (self, identifier):
+        """
+        Attempt to locate metadata for a publication based on its
+        persistent identifier, using the API for one of the discovery
+        services. In this case the persistent identifier is a DOI.
+        Parse the returned metadata while measuring the performance of
+        API responses. Also, trap and report errors in consistent
+        ways.
+
+        :param identifier: DOI used to locate a specific publications.
+        :type identifier: str.
+
+        :returns: tuple (meta, timing, message)
+            - meta - JSON list of search results.
+            - timing - elasped system time in milliseconds.
+            - message - an optional error message.
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        return meta, timing, message
+
+
+    def journal_lookup (self, identifier):
+        """
+        Attempt to locate metadata for a journal based on its
+        persistent identifier, using the API for one of the discovery
+        services. In this case the persistent identifier is an ISSN.
+        Parse the returned metadata while measuring the performance of
+        API responses. Also, trap and report errors in consistent
+        ways.
+
+        :param identifier: ISSN used to locate a specific journal.
+        :type identifier: str.
+
+        :returns: tuple (meta, timing, message)
+            - meta - JSON list of search results.
+            - timing - elasped system time in milliseconds.
+            - message - an optional error message.
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        return meta, timing, message
+
+
+class _ScholInfra_EuropePMC (_ScholInfra):
     """
     https://europepmc.org/RestfulWebService
     """
@@ -99,12 +199,14 @@ class ScholInfra_EuropePMC (ScholInfra):
         """
         parse metadata from XML returned from the EuropePMC API query
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         try:
             t0 = time.time()
-
-            url = self.get_api_url(urllib.parse.quote(title))
+            url = self._get_api_url(urllib.parse.quote(title))
             response = requests.get(url).text
-
             soup = BeautifulSoup(response, "html.parser")
 
             if self.parent.logger:
@@ -117,53 +219,53 @@ class ScholInfra_EuropePMC (ScholInfra):
                 if self.parent.logger:
                     self.parent.logger.debug(result)
 
-                result_title = self.get_xml_node_value(result, "title")
+                result_title = self._get_xml_node_value(result, "title")
 
                 if self.title_match(title, result_title):
-                    val = self.get_xml_node_value(result, "doi")
+                    val = self._get_xml_node_value(result, "doi")
 
                     if val:
                         meta["doi"] = val
 
-                    val = self.get_xml_node_value(result, "pmcid")
+                    val = self._get_xml_node_value(result, "pmcid")
 
                     if val:
                         meta["pmcid"] = val
-                        has_pdf = self.get_xml_node_value(result, "haspdf")
+                        has_pdf = self._get_xml_node_value(result, "haspdf")
 
                         if has_pdf == "Y":
                             meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
 
-                    val = self.get_xml_node_value(result, "journaltitle")
+                    val = self._get_xml_node_value(result, "journaltitle")
 
                     if val:
                         meta["journal"] = val
 
-                    val = self.get_xml_node_value(result, "authorstring")
+                    val = self._get_xml_node_value(result, "authorstring")
 
                     if val:
                         meta["authors"] = val.split(", ")
 
-                    source = self.get_xml_node_value(result, "source"),
-                    pmid = self.get_xml_node_value(result, "pmid")
+                    source = self._get_xml_node_value(result, "source"),
+                    pmid = self._get_xml_node_value(result, "pmid")
 
                     if (source and pmid) and not isinstance(source, tuple):
                         meta["url"] = "https://europepmc.org/article/{}/{}".format(source, pmid)
 
-            self.mark_time(t0)
-
             if len(meta) < 1:
-                return None
-            else:
-                return meta
+                meta = None
+
         except:
             print(traceback.format_exc())
-            print("ERROR: {}".format(title))
-            self.mark_time(t0)
-            return None
+            meta = None
+            message = f"ERROR: {title}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_OpenAIRE (ScholInfra):
+class _ScholInfra_OpenAIRE (_ScholInfra):
     """
     https://develop.openaire.eu/
     """
@@ -172,9 +274,12 @@ class ScholInfra_OpenAIRE (ScholInfra):
         """
         parse metadata from XML returned from the OpenAIRE API query
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
-        url = self.get_api_url() + "title={}".format(urllib.parse.quote(title))
+        t0 = time.time()
+        url = self._get_api_url() + "title={}".format(urllib.parse.quote(title))
         response = requests.get(url).text
         soup = BeautifulSoup(response, "html.parser")
 
@@ -184,26 +289,29 @@ class ScholInfra_OpenAIRE (ScholInfra):
         meta = OrderedDict()
 
         for result in soup.find_all("oaf:result"):
-            result_title = self.get_xml_node_value(result, "title")
+            result_title = self._get_xml_node_value(result, "title")
 
             if self.title_match(title, result_title):
-                meta["url"] = self.get_xml_node_value(result, "url")
+                meta["url"] = self._get_xml_node_value(result, "url")
                 meta["authors"] = [a.text for a in result.find_all("creator")]
                 meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
-                self.mark_time(t0)
-                return meta
+                timing = self._mark_elapsed_time(t0)
+                return meta, timing, message
 
-        self.mark_time(t0)
-        return None
+        return None, timing, message
 
 
-    def full_text_search (self, search_term, limit=None):
+    def full_text_search (self, search_term, limit=None, exact_match=None):
         """
         parse metadata from XML returned from the OpenAIRE API query
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         t0 = time.time()
-        base_url = self.get_api_url() + "keywords={}".format(urllib.parse.quote(search_term))
+        base_url = self._get_api_url() + "keywords={}".format(urllib.parse.quote(search_term))
         
         if limit:
             search_url = base_url + "&size={}".format(limit)
@@ -215,13 +323,13 @@ class ScholInfra_OpenAIRE (ScholInfra):
         
         response = requests.get(search_url).text
         soup = BeautifulSoup(response, "html.parser")
-        pub_metadata = soup.find_all("oaf:result")
+        meta = soup.find_all("oaf:result")
 
-        self.mark_time(t0)
-        return pub_metadata
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
     
 
-class ScholInfra_SemanticScholar (ScholInfra):
+class _ScholInfra_SemanticScholar (_ScholInfra):
     """
     http://api.semanticscholar.org/
     """
@@ -230,20 +338,22 @@ class ScholInfra_SemanticScholar (ScholInfra):
         """
         parse metadata returned from a Semantic Scholar API query
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
-        url = self.get_api_url(identifier)
+        t0 = time.time()
+        url = self._get_api_url(identifier)
         meta = json.loads(requests.get(url).text)
 
-        self.mark_time(t0)
+        if not meta or len(meta) < 1 or "error" in meta:
+            meta = None
 
-        if meta and len(meta) > 0 and "error" not in meta:
-            return meta
-        else:
-            return None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_Unpaywall (ScholInfra):
+class _ScholInfra_Unpaywall (_ScholInfra):
     """
     https://unpaywall.org/products/api
     """
@@ -252,22 +362,24 @@ class ScholInfra_Unpaywall (ScholInfra):
         """
         construct a URL to query the API for Unpaywall
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         email = self.parent.config["DEFAULT"]["email"]
 
-        url = self.get_api_url(identifier, email)
+        url = self._get_api_url(identifier, email)
         meta = json.loads(requests.get(url).text)
 
-        self.mark_time(t0)
+        if not meta or len(meta) < 1 or "error" in meta:
+            meta = None
 
-        if meta and len(meta) > 0 and "error" not in meta:
-            return meta
-        else:
-            return None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_dissemin (ScholInfra):
+class _ScholInfra_dissemin (_ScholInfra):
     """
     https://dissemin.readthedocs.io/en/latest/api.html
     """
@@ -276,32 +388,34 @@ class ScholInfra_dissemin (ScholInfra):
         """
         parse metadata returned from a dissemin API query
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         try:
             t0 = time.time()
-
-            url = self.get_api_url(identifier)
+            url = self._get_api_url(identifier)
             meta = json.loads(requests.get(url).text)
 
-            self.mark_time(t0)
-
-            if meta and len(meta) > 0 and "error" not in meta:
-                return meta
-            else:
-                return None
+            if not meta or len(meta) < 1 or "error" in meta:
+                meta = None
 
         except:
             print(traceback.format_exc())
-            print("ERROR: {}".format(identifier))
-            self.mark_time(t0)
-            return None
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_Dimensions (ScholInfra):
+class _ScholInfra_Dimensions (_ScholInfra):
     """
     https://docs.dimensions.ai/dsl/
     """
 
-    def login (self):
+    def _login (self):
         """
         login to the Dimensions API through their 'DSL'
         """
@@ -315,11 +429,11 @@ class ScholInfra_Dimensions (ScholInfra):
             self.api_obj = dimcli.Dsl(verbose=False)
 
 
-    def run_query (self, query):
+    def _run_query (self, query):
         """
         run one Dimensions API query, and first login if needed
         """
-        self.login()
+        self._login()
         return self.api_obj.query(query)
 
 
@@ -327,13 +441,16 @@ class ScholInfra_Dimensions (ScholInfra):
         """
         parse metadata from a Dimensions API query
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         enc_title = title.replace('"', '').replace(":", " ").strip()
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
-        self.login()
-        response = self.run_query(query)
+        self._login()
+        response = self._run_query(query)
 
         if hasattr(response, "publications"):
             for meta in response.publications:
@@ -343,20 +460,21 @@ class ScholInfra_Dimensions (ScholInfra):
                     if self.parent.logger:
                         self.parent.logger.debug(meta)
 
-                    self.mark_time(t0)
-
                     if len(meta) > 0:
-                        self.mark_time(t0)
-                        return meta
+                        timing = self._mark_elapsed_time(t0)
+                        return meta, timing, message
 
-        self.mark_time(t0)
-        return None
+        return None, timing, message
 
 
     def full_text_search (self, search_term, limit=None, exact_match=True):
         """
         parse metadata from a Dimensions API full-text search
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         t0 = time.time()
 
         if not limit:
@@ -371,20 +489,20 @@ class ScholInfra_Dimensions (ScholInfra):
             if exact_match == False:
                 query = 'search publications in full_data_exact for "{}" return publications[all] limit {}'.format(search_term,limit)
 
-        self.login()
-        response = self.run_query(query)
-        search_results = response.publications
+        self._login()
+        response = self._run_query(query)
+        meta = response.publications
         
-        self.mark_time(t0)
-        return search_results
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
         
 
-class ScholInfra_RePEc (ScholInfra):
+class _ScholInfra_RePEc (_ScholInfra):
     """
     https://ideas.repec.org/api.html
     """
 
-    def get_cgi_url (self, title):
+    def _get_cgi_url (self, title):
         """
         construct a URL to query the CGI for RePEc
         """
@@ -396,9 +514,12 @@ class ScholInfra_RePEc (ScholInfra):
         """
         to use the RePEc API, first obtain a handle for a publication
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
-        url = self.get_cgi_url(title)
+        t0 = time.time()
+        url = self._get_cgi_url(title)
         response = requests.get(url).text
         soup = BeautifulSoup(response, "html.parser")
 
@@ -415,50 +536,48 @@ class ScholInfra_RePEc (ScholInfra):
                 self.parent.logger.debug(li)
 
             # TODO: can we perform a title search here?
-            handle = li.find("i").get_text()
-            self.mark_time(t0)
+            meta = li.find("i").get_text()
 
-            return handle
-
-        self.mark_time(t0)
-        return None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
     def get_meta (self, handle):
         """
         pull RePEc metadata based on the handle
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         try:
             t0 = time.time()
-
             token = self.parent.config["DEFAULT"]["repec_token"]
-            url = self.get_api_url(token, handle)
+            url = self._get_api_url(token, handle)
             meta = json.loads(requests.get(url).text)
 
-            self.mark_time(t0)
+            if not meta or len(meta) < 1:
+                meta = None
 
-            if meta and len(meta) > 0:
-                return meta
-            else:
-                return None
         except:
             print(traceback.format_exc())
-            print("ERROR: {}".format(handle))
-            self.mark_time(t0)
-            return None
+            meta = None
+            message = f"ERROR: {handle}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_SSRN (ScholInfra):
+class _ScholInfra_SSRN (_ScholInfra):
     """
     https://www.ssrn.com/index.cfm/en/
     """
 
-    def url_lookup (self, url):
+    def _lookup_url (self, url):
         """
         extract the structured metadata from a rendered URL
         """
-        t0 = time.time()
-
         response = requests.get(url).text
         soup = BeautifulSoup(response, "html.parser")
 
@@ -478,40 +597,42 @@ class ScholInfra_SSRN (ScholInfra):
         authors = [a["content"] for a in auth_list]
         meta["authors"] = authors
 
-        self.mark_time(t0)
+        if len(meta) < 1:
+            meta = None
 
-        if len(meta) > 0:
-            return meta
-        else:
-            return None
+        return meta, timing, message
     
 
     def publication_lookup (self, identifier):
         """
         parse metadata returned from an SSRN publication page using a DOI
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         t0 = time.time()
-        url = self.get_api_url(identifier)
+        url = self._get_api_url(identifier)
 
         if "ssrn" in url:    
-            meta = self.url_lookup(url)
-            self.mark_time(t0)
+            meta = self._lookup_url(url)
+            timing = self._mark_elapsed_time(t0)
 
-            if meta and len(meta) > 0:
-                return meta
-            else:
-                return None
-        else:
-            self.mark_time(t0)
-            return None
+            if not meta or len(meta) < 1:
+                meta = None
+
+        return meta, timing, message
 
 
     def title_search (self, title):
         """
         title search for SSRN
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         ssrn_homepage = "https://www.ssrn.com/index.cfm/en/"
         chrome_path=self.parent.config["DEFAULT"]["chrome_exe_path"]
 
@@ -532,85 +653,96 @@ class ScholInfra_SSRN (ScholInfra):
         browser.quit()
 
         meta = self.url_lookup(url)
-        self.mark_time(t0)
 
-        if meta and len(meta) > 0:
-            return meta
-        else:
-            return None
+        if not meta or len(meta) < 1:
+            meta = None
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_Crossref (ScholInfra):
+class _ScholInfra_Crossref (_ScholInfra):
 
     def publication_lookup (self, identifier):
         """
         parse metadata returned from Crossref API given a DOI
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         meta = crossref_commons.retrieval.get_publication_as_json(identifier)
-        self.mark_time(t0)
         
-        if meta and len(meta) > 0:
-            return meta
-        else:
-            return None
+        if not meta or len(meta) < 1:
+            meta = None
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
     def title_search (self, title):
         """
         parse metadata returned from Crossref API given a title
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         query = "query.bibliographic={}".format(urllib.parse.quote(title))
-        url = self.get_api_url(query)
+        url = self._get_api_url(query)
 
         response = requests.get(url).text
         json_response = json.loads(response)
 
-        meta = json_response["message"]["items"][0]
-        result_title = meta["title"][0]
+        parsed = json_response["message"]["items"][0]
+        result_title = parsed["title"][0]
 
         if self.title_match(title, result_title):
+            meta = parsed
+
             if self.parent.logger:
                 self.parent.logger.debug(meta)
 
-            self.mark_time(t0)
-            return meta
-
-        self.mark_time(t0)
-        return None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-    def full_text_search (self, search_term):
+    def full_text_search (self, search_term, limit=None, exact_match=None):
         """
         search the Crossref API using a given term e.g. NHANES. 
         Note that Crossref doesn't support exact string matching 
         for multiple terms within strings.
         See https://github.com/CrossRef/rest-api-doc/issues/143
         """
-        t0 = time.time()
+        meta = None
+        timing = 0.0
+        message = None
 
+        t0 = time.time()
         query = "query=%22{}%22/type/journal-article&rows=1000".format(urllib.parse.quote(search_term))
-        url = self.get_api_url(query)
+        url = self._get_api_url(query)
 
         response = requests.get(url).text
         json_response = json.loads(response)
-        search_results = json_response["message"]
+        meta = json_response["message"]
 
-        self.mark_time(t0)
-        return search_results
+        self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-class ScholInfra_PubMed (ScholInfra):
+class _ScholInfra_PubMed (_ScholInfra):
     """
     parse metadata returned from PubMed's Entrez API given a title
     """
 
     def title_search (self, title):
-        t0 = time.time()
-        
+        meta = None
+        timing = 0.0
+        message = None
+
+        t0 = time.time()     
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         handle = Entrez.read(Entrez.esearch(
@@ -628,23 +760,22 @@ class ScholInfra_PubMed (ScholInfra):
         fetch_result.close()
 
         xml = xmltodict.parse(data)
-        meta = json.loads(json.dumps(xml))
+        parsed = json.loads(json.dumps(xml))
 
-        if "PubmedArticle" in meta["PubmedArticleSet"]:
-            meta = meta["PubmedArticleSet"]["PubmedArticle"]
-            result_title = meta["MedlineCitation"]["Article"]["ArticleTitle"]
+        if "PubmedArticle" in parsed["PubmedArticleSet"]:
+            parsed = parsed["PubmedArticleSet"]["PubmedArticle"]
+            result_title = parsed["MedlineCitation"]["Article"]["ArticleTitle"]
 
             if self.title_match(title, result_title):
-                self.mark_time(t0)
+                if parsed and len(parsed) > 0:
+                    meta = parsed
 
-                if meta and len(meta) > 0:
-                    return meta
-
-            self.mark_time(t0)
-            return None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
-    def full_text_id_search (self, search_term, limit=None):
+    def _full_text_get_ids (self, search_term, limit=None):
+        id_list = None
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
         query_return = Entrez.read(Entrez.egquery(term="\"{}\"".format(search_term)))
@@ -652,61 +783,72 @@ class ScholInfra_PubMed (ScholInfra):
 
         if response_count > 0:
             if limit == None:
-                handle = Entrez.read(Entrez.esearch(db="pubmed",
-                                                    retmax=response_count,
-                                                    term="\"{}\"".format(search_term)
-                                                    )
-                                    )
+                handle = Entrez.read(Entrez.esearch(
+                    db="pubmed",
+                    retmax=response_count,
+                    term="\"{}\"".format(search_term)
+                    )
+                )
 
                 id_list = handle["IdList"]
 
             if limit != None and limit > 0 and isinstance(limit, int):
-                handle = Entrez.read(Entrez.esearch(db="pubmed",
-                                                    retmax=limit,
-                                                    term="\"{}\"".format(search_term)
-                                                    )
-                                    )
+                handle = Entrez.read(Entrez.esearch(
+                    db="pubmed",
+                    retmax=limit,
+                    term="\"{}\"".format(search_term)
+                    )
+                )
 
                 id_list = handle["IdList"]
-            return id_list
-            
-        else:
-            return None
+
+        return id_list
 
 
-    def full_text_search (self, search_term):
+    def full_text_search (self, search_term, limit=None, exact_match=None):
+        """
+        PubMed full-text search
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
         t0 = time.time()
-        
         Entrez.email = self.parent.config["DEFAULT"]["email"]
-        id_list  = self.full_text_id_search(search_term)
+        id_list = self._full_text_get_ids(search_term, limit)
         
         if id_list and len(id_list) > 0:
-                id_list = ",".join(id_list)
+            id_list = ",".join(id_list)
 
-                fetch_result = Entrez.efetch(db="pubmed",
-                                             id=id_list,
-                                             retmode = "xml"
-                                             )
+            fetch_result = Entrez.efetch(
+                db="pubmed",
+                id=id_list,
+                retmode = "xml"
+                )
 
-                data = fetch_result.read()
-                fetch_result.close()
+            data = fetch_result.read()
+            fetch_result.close()
 
-                xml = xmltodict.parse(data)
-                meta_list = json.loads(json.dumps(xml))
-                meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
+            xml = xmltodict.parse(data)
+            meta_list = json.loads(json.dumps(xml))
+            meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
                 
-                self.mark_time(t0)
-                return meta
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
                         
-    def journal_lookup (self, issn):
+    def journal_lookup (self, identifier):
         """
         use the NCBI discovery service for ISSN lookup
         """
+        meta = None
+        timing = 0.0
+        message = None
+
         t0 = time.time()
 
         try:
-            url = "https://www.ncbi.nlm.nih.gov/nlmcatalog/?report=xml&format=text&term={}".format(issn)
+            url = "https://www.ncbi.nlm.nih.gov/nlmcatalog/?report=xml&format=text&term={}".format(identifier)
             response = requests.get(url).text
 
             soup = BeautifulSoup(response, "html.parser")
@@ -729,20 +871,20 @@ class ScholInfra_PubMed (ScholInfra):
                             ncbi = ncbi[1]
                         else:
                             # bad XML returned from the API call
-                            return None, f"NCBI bad XML format: no JrXML element for ISSN {issn}"
+                            message = f"NCBI bad XML format: no JrXML element for ISSN {identifier}"
+                            return None, timing, message
 
                     meta = ncbi["JrXml"]["Serial"]
                     #pprint.pprint(meta)
 
-                    self.mark_time(t0)
-                    return meta, None
-
         except:
             print(traceback.format_exc())
-            print(f"ERROR - NCBI failed lookup: {issn}")
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
 
-        self.mark_time(t0)
-        return None, None
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
 
 
 ######################################################################
@@ -762,60 +904,60 @@ class ScholInfraAPI:
         # other initializations 
         requests_cache.install_cache("richcontext")
 
-        self.crossref = ScholInfra_Crossref(
+        self.crossref = _ScholInfra_Crossref(
             parent=self,
             name="Crossref",
             api_url ="https://api.crossref.org/works?{}"
             )
         
-        self.europepmc = ScholInfra_EuropePMC(
+        self.europepmc = _ScholInfra_EuropePMC(
             parent=self,
             name="EuropePMC",
             api_url="https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={}"
             )
 
-        self.openaire = ScholInfra_OpenAIRE(
+        self.openaire = _ScholInfra_OpenAIRE(
             parent=self,
             name="OpenAIRE",
             api_url="http://api.openaire.eu/search/publications?"
             )
 
-        self.pubmed = ScholInfra_PubMed(
+        self.pubmed = _ScholInfra_PubMed(
             parent=self,
             name="PubMed"
             )
 
-        self.semantic = ScholInfra_SemanticScholar(
+        self.semantic = _ScholInfra_SemanticScholar(
             parent=self,
             name="Semantic Scholar",
             api_url = "http://api.semanticscholar.org/v1/paper/{}"
             )
 
-        self.unpaywall = ScholInfra_Unpaywall(
+        self.unpaywall = _ScholInfra_Unpaywall(
             parent=self,
             name="Unpaywall",
             api_url = "https://api.unpaywall.org/v2/{}?email={}"
             )
 
-        self.dissemin = ScholInfra_dissemin(
+        self.dissemin = _ScholInfra_dissemin(
             parent=self,
             name="dissemin",
             api_url = "https://dissem.in/api/{}"
             )
 
-        self.dimensions = ScholInfra_Dimensions(
+        self.dimensions = _ScholInfra_Dimensions(
             parent=self,
             name="Dimensions",
             )
 
-        self.repec = ScholInfra_RePEc(
+        self.repec = _ScholInfra_RePEc(
             parent=self,
             name="RePEc",
             api_url = "https://api.repec.org/call.cgi?code={}&getref={}",
             cgi_url = "https://ideas.repec.org/cgi-bin/htsearch?q={}"
             )
 
-        self.ssrn = ScholInfra_SSRN(
+        self.ssrn = _ScholInfra_SSRN(
             parent=self,
             name="SSRN",
             api_url ="https://doi.org/{}"
