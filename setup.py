@@ -5,13 +5,13 @@ with open("README.md", "r") as fh:
 
 setup(
     name="richcontext-scholapi",
-    version="1.0.5",
+    version="1.1.0",
     author="Coleridge Initiative",
     author_email="dataanalytics@coleridgeinitiative.org",
     description="Rich Context API integrations for federating discovery services and metadata exchange across multiple scholarly infrastructure providers",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/NYU-CI/RCApi",
+    url="https://github.com/Coleridge-Initiative/RCApi",
     packages=find_namespace_packages(include=['richcontext.*']),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -37,7 +37,7 @@ setup(
         "selenium",
         "xmltodict",
     ],
-    keywords="Rich Context, DOI, ISSN, RePEc, PubMed, Crossref, Dimensions, EuropePMC, OpenAIRE, Unpaywall, dissemin, Semantic Scholar, discovery, discovery service, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
+    keywords="Rich Context, DOI, ISSN, ROR, ORCID, RePEc, PubMed, Crossref, Dimensions, EuropePMC, OpenAIRE, Unpaywall, dissemin, Semantic Scholar, discovery, discovery service, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
     license="MIT",
     include_package_data=True,
     zip_safe=False

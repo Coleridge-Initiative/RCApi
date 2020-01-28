@@ -56,13 +56,15 @@ Parameters used in the configuration file include:
 | parameter | value | 
 | --- | --- |
 | `chrome_exe_path` | path/to/chrome.exe |
+| `core_api_key` | CORE API key |
 | `dimensions_password` | Dimensions API password |
 | `elsevier_api_key` | Elsvier API key |
 | `email` | personal email address |
+| `orcid_secret` | ORCID API key |
 | `repec_token` | RePEc API token |
 
 Download the [Chrome webdriver](https://chromedriver.chromium.org/downloads) 
-to enable use of Selenium.
+to enable use of Selenium (SSRN only).
 
 For a good (although slightly dated) tutorial for installing and
 testing Selenium on Ubuntu Linux, see:
@@ -73,7 +75,6 @@ testing Selenium on Ubuntu Linux, see:
 
 ```
 from richcontext import scholapi as rc_scholapi
-import pprint
 
 # initialize the federated API access
 schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
@@ -82,11 +83,15 @@ schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
 title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
 
 # run it...
-meta = schol.openaire.title_search(title)
+meta, timing, message = schol.openaire.title_search(title)
 
-# report results
-pprint.pprint(meta)
-print("\ntime: {:.3f} ms - {}".format(schol.openaire.elapsed_time, schol.openaire.name))
+if message:
+    # error case
+    print(message)
+else:
+    # report results
+    print(meta)
+    print("\ntime: {:.3f} ms - {}".format(timing, schol.openaire.name))
 ```
 
 
@@ -130,22 +135,18 @@ python test.py
 
 ## To Do
 
- * parse HTML-embedded metadata from the web pages for PMC/Pubmed, NIH, etc.
- * [Scholexplorer](http://scholexplorer.openaire.eu/#/)
- * [DataCite integration](https://github.com/NYU-CI/RCApi/issues/8)
- * [PapersWithCode](https://paperswithcode.com/?ref=semscholar)
- * [Springer](https://github.com/srand525/search_springer/blob/master/SpringerFetch.py)
-
 If you'd like to contribute, please see our listings of
-[*good first issues*](https://github.com/NYU-CI/RCApi/labels/good%20first%20issue)
+[*good first issues*](https://github.com/Coleridge-Initiative/RCApi/labels/good%20first%20issue)
 
 
 ## Kudos
 
 Contributors:
 [@ceteri](https://github.com/ceteri), 
-[@srand525](https://github.com/srand525), 
 [@IanMulvany](https://github.com/IanMulvany),
+[@srand525](https://github.com/srand525), 
+[@lobodemonte](https://github.com/lobodemonte),
+[@ernestogimeno](https://github.com/ernestogimeno),
 plus many thanks for the inspiring *2019 Rich Context Workshop* notes by 
 [@metasj](https://github.com/metasj),
 and guidance from
