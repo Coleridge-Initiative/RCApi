@@ -131,5 +131,40 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta == "RePEc:cen:wpaper:09-14")
 
 
+    def test_datacite_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.22002/d1.246"
+        title = "In Situ Carbon Dioxide and Methane Mole Fractions from the Los Angeles Megacity Carbon Project"
+        meta, timing, message = schol.datacite.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        self.assertTrue(meta['attributes']['doi'] == doi)
+        self.assertTrue(meta['attributes']['titles'][0]['title'] == title)
+
+        # error case
+        doi = "10.00000/xxx"
+        meta, timing, message = schol.datacite.publication_lookup(doi)
+        self.assertTrue(meta == None)
+
+    def test_datacite_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        title = "Drivers in solar deployment in India: A state-level analysis"
+        meta, timing, message = schol.datacite.title_search(title)
+
+        #TODO: stronger checks for this test, 
+        #Issue: It's hard to get the actual publication using its title 
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        self.assertTrue(len(meta) >= 25)
+
+    def test_datacite_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NHANES Hello Kitty"
+        meta, timing, message = schol.datacite.full_text_search(search_term, limit=100, exact_match=True)
+
+        #TODO stronger checks for this test, add more branch coverage
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        self.assertTrue(len(meta) <= 100)
+
+
 if __name__ == "__main__":
     unittest.main()

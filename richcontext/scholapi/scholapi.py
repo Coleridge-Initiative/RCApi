@@ -887,6 +887,84 @@ class _ScholInfra_PubMed (_ScholInfra):
         return meta, timing, message
 
 
+class _ScholInfra_DataCite (_ScholInfra): 
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from DataCite API given a DOI
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        t0 = time.time()
+        url = self._get_api_url("/" + identifier)
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            json_response = json.loads(response.text)
+            meta = json_response["data"]
+        else:
+            meta = None
+            message = response.text
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+    
+    def title_search (self, title):
+        """
+        parse metadata from the DataCite API query
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        t0 = time.time()
+
+        ##TODO: should I add a result size limit? currently it will only return 25 entries
+        ##TODO: should I make all words match in title (append them with '20%+'), currently if one word matches in the title it will be included
+        url = self._get_api_url("?query=titles.title:{}".format(urllib.parse.quote(title)))
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            json_response = json.loads(response.text)
+            meta = json_response["data"]
+        else:
+            meta = None
+            message = response.text
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def full_text_search (self, search_term, limit=None, exact_match=None):
+        """
+        DataCite full-text search
+        """
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
+
+        if exact_match:
+            exact_terms = ["+" + term for term in search_term.split(' ')] 
+            url = self._get_api_url("?query={}".format(urllib.parse.quote(' '.join(exact_terms), safe='+')))
+        else:
+            url = self._get_api_url("?query={}".format(urllib.parse.quote(search_term)))
+
+        if limit:
+            url = url + "&page[size]={}".format(limit)
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            json_response = json.loads(response.text)
+            meta = json_response["data"]
+        else:
+            meta = None
+            message = response.text
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
 ######################################################################
 ## federated API access
 
@@ -962,6 +1040,12 @@ class ScholInfraAPI:
             name="SSRN",
             api_url ="https://doi.org/{}"
             )
+
+        self.datacite = _ScholInfra_DataCite(
+            parent=self,
+            name='DataCite',
+            api_url='https://api.datacite.org/dois{}'
+        )
 
 
     ## profiling utilities
