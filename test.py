@@ -145,6 +145,7 @@ class TestOpenAPIs (unittest.TestCase):
         doi = "10.00000/xxx"
         meta, timing, message = schol.datacite.publication_lookup(doi)
         self.assertTrue(meta == None)
+        self.assertTrue("404" in message)
 
     def test_datacite_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
