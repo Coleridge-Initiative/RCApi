@@ -147,25 +147,30 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta == None)
         self.assertTrue("404" in message)
 
+
     def test_datacite_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         title = "Drivers in solar deployment in India: A state-level analysis"
         meta, timing, message = schol.datacite.title_search(title)
 
-        #TODO: stronger checks for this test, 
-        #Issue: It's hard to get the actual publication using its title 
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(len(meta) >= 25)
+        self.assertTrue(len(meta) == 25)
+
 
     def test_datacite_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        search_term = "NHANES Hello Kitty"
-        meta, timing, message = schol.datacite.full_text_search(search_term, limit=100, exact_match=True)
+        search_term = "NOAA NASA"
+        meta, timing, message = schol.datacite.full_text_search(search_term, limit=50, exact_match=True)
 
-        #TODO stronger checks for this test, add more branch coverage
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(len(meta) <= 100)
+        self.assertTrue(len(meta) == 50)
 
+
+    def test_datacite__format_exact_quote (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NOAA NASA"
+        exact_quote = schol.datacite._format_exact_quote(search_term)
+        self.assertTrue(exact_quote == "+NOAA%20+NASA")
 
 if __name__ == "__main__":
     unittest.main()

@@ -888,6 +888,12 @@ class _ScholInfra_PubMed (_ScholInfra):
 
 
 class _ScholInfra_DataCite (_ScholInfra): 
+    
+    def _format_exact_quote(self, search_term):
+        exact_terms = ["+" + term for term in search_term.split(' ')]
+        return urllib.parse.quote(' '.join(exact_terms), safe='+')
+
+
     def publication_lookup (self, identifier):
         """
         parse metadata returned from DataCite API given a DOI
@@ -909,6 +915,7 @@ class _ScholInfra_DataCite (_ScholInfra):
 
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
+
     
     def title_search (self, title):
         """
@@ -920,10 +927,8 @@ class _ScholInfra_DataCite (_ScholInfra):
 
         t0 = time.time()
 
-        ##TODO: should I add a result size limit? currently it will only return 25 entries
-        ##TODO: should I make all words match in title (append them with '20%+'), currently if one word matches in the title it will be included
-        url = self._get_api_url("?query=titles.title:{}".format(urllib.parse.quote(title)))
-        
+        url = self._get_api_url("?query=titles.title:{}".format(self._format_exact_quote(title)))
+
         response = requests.get(url)
         if response.status_code == 200:
             json_response = json.loads(response.text)
@@ -946,8 +951,7 @@ class _ScholInfra_DataCite (_ScholInfra):
         t0 = time.time()
 
         if exact_match:
-            exact_terms = ["+" + term for term in search_term.split(' ')] 
-            url = self._get_api_url("?query={}".format(urllib.parse.quote(' '.join(exact_terms), safe='+')))
+            url = self._get_api_url("?query={}".format(self._format_exact_quote(search_term)))
         else:
             url = self._get_api_url("?query={}".format(urllib.parse.quote(search_term)))
 
