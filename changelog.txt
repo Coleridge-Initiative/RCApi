@@ -1,5 +1,12 @@
 # `richcontext.scholapi` changelog
 
+## 1.1.1
+
+2020-02-??
+
+  - added integration of DataCite API
+
+
 ## 1.1.0
 
 2020-01-28

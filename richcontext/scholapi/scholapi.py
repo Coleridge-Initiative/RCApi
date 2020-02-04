@@ -4,6 +4,7 @@
 from Bio import Entrez
 from bs4 import BeautifulSoup
 from collections import OrderedDict
+from difflib import SequenceMatcher
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -887,6 +888,115 @@ class _ScholInfra_PubMed (_ScholInfra):
         return meta, timing, message
 
 
+class _ScholInfra_DataCite (_ScholInfra): 
+    
+    def _format_exact_quote (self, search_term):
+        #exact_terms = ["+" + term for term in search_term.split(" ")]
+        #return urllib.parse.quote(" ".join(exact_terms), safe="+")
+        return '"' + urllib.parse.quote_plus(search_term.strip()) + '"'
+
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from DataCite API given a DOI
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        t0 = time.time()
+        url = self._get_api_url("/" + identifier)
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            json_response = json.loads(response.text)
+            meta = json_response["data"]
+        else:
+            meta = None
+            message = response.text
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+    
+    def title_search (self, title):
+        """
+        parse metadata from the DataCite API query
+        """
+        meta = None
+        timing = 0.0
+        message = None
+
+        t0 = time.time()
+        query = self._format_exact_quote(title)
+        url = self._get_api_url("?resource-type-id=text&query=titles.title:{}".format(query))
+        
+        try:
+            response = requests.get(url)            
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                entries = json_response["data"]
+                max_score = 0.0
+
+                for entry in entries:
+                    titles = entry.get("attributes")["titles"]
+
+                    for title_obj in titles:
+                        s = SequenceMatcher(None, title_obj["title"], title)
+
+                        if (s.ratio() > max_score):
+                            meta = entry
+                            max_score = s.ratio()
+
+                if max_score < 0.9: # a heuristic/guess -- we need to analyze this
+                    meta = None
+
+            else:
+                meta = None
+                message = response.text
+
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {title}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def full_text_search (self, search_term, limit=None, exact_match=None):
+        """
+        DataCite full-text search
+        """
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
+
+        if exact_match:
+            url = self._get_api_url("?resource-type-id=text&query={}".format(self._format_exact_quote(search_term)))
+        else:
+            url = self._get_api_url("?resource-type-id=text&query={}".format(urllib.parse.quote_plus(search_term)))
+
+        if limit:
+            url = url + "&page[size]={}".format(limit)
+        
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            json_response = json.loads(response.text)
+            meta = json_response["data"]
+        else:
+            meta = None
+            message = response.text
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
 ######################################################################
 ## federated API access
 
@@ -962,6 +1072,12 @@ class ScholInfraAPI:
             name="SSRN",
             api_url ="https://doi.org/{}"
             )
+
+        self.datacite = _ScholInfra_DataCite(
+            parent=self,
+            name="DataCite",
+            api_url="https://api.datacite.org/dois{}"
+        )
 
 
     ## profiling utilities

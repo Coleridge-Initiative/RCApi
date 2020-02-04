@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from richcontext import scholapi as rc_scholapi
+import json
 import logging
 import pprint
 import sys
@@ -23,21 +24,22 @@ if __name__ == "__main__":
     #pr = schol.start_profiling()
 
     # search parameters for example use cases
-    title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
     doi = "10.1016/j.appet.2017.07.006"
     issn = "1932-6203"
+    title = "Empirical analysis of potential improvements for high voltage protective algorithms"
+    source = schol.datacite
 
     # run it...
-    #meta, timing, message = schol.europepmc.title_search(title)
-    meta, timing, message = schol.pubmed.journal_lookup(issn)
+    #meta, timing, message = source.journal_lookup(issn)
+    meta, timing, message = source.title_search(title)
 
     if message:
         # error case
         print(message)
     else:
         # report results
-        print(meta)
-        print("\ntime: {:.3f} ms - {}".format(timing, schol.pubmed.name))
+        print(json.dumps(meta, indent=4, ensure_ascii=False))
+        print("\ntime: {:.3f} ms - {}".format(timing, source.name))
 
     # report profiling
     #schol.stop_profiling(pr)
