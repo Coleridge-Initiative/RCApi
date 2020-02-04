@@ -100,15 +100,16 @@ else:
 APIs used to retrieve metadata:
 
   * [OpenAIRE](https://develop.openaire.eu/)
+  * [RePEc](https://ideas.repec.org/api.html)
+  * [Unpaywall](https://unpaywall.org/products/api)
+  * [Crossref](https://www.crossref.org/services/metadata-delivery/)
+  * [DataCite](https://support.datacite.org/docs/api)
+  * [PubMed](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
   * [EuropePMC](https://europepmc.org/RestfulWebService)
   * [Semantic Scholar](http://api.semanticscholar.org/)
-  * [Unpaywall](https://unpaywall.org/products/api)
   * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
   * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
-  * [RePEc](https://ideas.repec.org/api.html)
   * [SSRN](https://www.ssrn.com/)
-  * [Crossref](https://www.crossref.org/services/metadata-delivery/)
-  * [PubMed](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
 
 See `docs/enrich_pubs.ipynb` for example API usage to pull the
 federated metadata for a publication.
@@ -145,8 +146,8 @@ Contributors:
 [@ceteri](https://github.com/ceteri), 
 [@IanMulvany](https://github.com/IanMulvany),
 [@srand525](https://github.com/srand525), 
-[@lobodemonte](https://github.com/lobodemonte),
 [@ernestogimeno](https://github.com/ernestogimeno),
+[@lobodemonte](https://github.com/lobodemonte),
 plus many thanks for the inspiring *2019 Rich Context Workshop* notes by 
 [@metasj](https://github.com/metasj),
 and guidance from

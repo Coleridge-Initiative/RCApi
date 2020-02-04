@@ -890,9 +890,10 @@ class _ScholInfra_PubMed (_ScholInfra):
 
 class _ScholInfra_DataCite (_ScholInfra): 
     
-    def _format_exact_quote(self, search_term):
-        exact_terms = ["+" + term for term in search_term.split(' ')]
-        return urllib.parse.quote(' '.join(exact_terms), safe='+')
+    def _format_exact_quote (self, search_term):
+        #exact_terms = ["+" + term for term in search_term.split(" ")]
+        #return urllib.parse.quote(" ".join(exact_terms), safe="+")
+        return '"' + urllib.parse.quote_plus(search_term.strip()) + '"'
 
 
     def publication_lookup (self, identifier):
@@ -907,6 +908,7 @@ class _ScholInfra_DataCite (_ScholInfra):
         url = self._get_api_url("/" + identifier)
 
         response = requests.get(url)
+
         if response.status_code == 200:
             json_response = json.loads(response.text)
             meta = json_response["data"]
@@ -927,22 +929,30 @@ class _ScholInfra_DataCite (_ScholInfra):
         message = None
 
         t0 = time.time()
-
-        url = self._get_api_url("?query=titles.title:{}".format(self._format_exact_quote(title)))
+        query = self._format_exact_quote(title)
+        url = self._get_api_url("?resource-type-id=text&query=titles.title:{}".format(query))
         
         try:
             response = requests.get(url)            
+
             if response.status_code == 200:
                 json_response = json.loads(response.text)
                 entries = json_response["data"]
                 max_score = 0.0
+
                 for entry in entries:
-                        titles = entry.get('attributes')['titles']
-                        for title_obj in titles:
-                            s = SequenceMatcher(None, title_obj['title'], title)
-                            if (s.ratio() > max_score):
-                                meta = entry
-                                max_score = s.ratio()
+                    titles = entry.get("attributes")["titles"]
+
+                    for title_obj in titles:
+                        s = SequenceMatcher(None, title_obj["title"], title)
+
+                        if (s.ratio() > max_score):
+                            meta = entry
+                            max_score = s.ratio()
+
+                if max_score < 0.9: # a heuristic/guess -- we need to analyze this
+                    meta = None
+
             else:
                 meta = None
                 message = response.text
@@ -967,14 +977,15 @@ class _ScholInfra_DataCite (_ScholInfra):
         t0 = time.time()
 
         if exact_match:
-            url = self._get_api_url("?query={}".format(self._format_exact_quote(search_term)))
+            url = self._get_api_url("?resource-type-id=text&query={}".format(self._format_exact_quote(search_term)))
         else:
-            url = self._get_api_url("?query={}".format(urllib.parse.quote(search_term)))
+            url = self._get_api_url("?resource-type-id=text&query={}".format(urllib.parse.quote_plus(search_term)))
 
         if limit:
             url = url + "&page[size]={}".format(limit)
         
         response = requests.get(url)
+
         if response.status_code == 200:
             json_response = json.loads(response.text)
             meta = json_response["data"]
@@ -984,6 +995,7 @@ class _ScholInfra_DataCite (_ScholInfra):
 
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
+
 
 ######################################################################
 ## federated API access
@@ -1063,8 +1075,8 @@ class ScholInfraAPI:
 
         self.datacite = _ScholInfra_DataCite(
             parent=self,
-            name='DataCite',
-            api_url='https://api.datacite.org/dois{}'
+            name="DataCite",
+            api_url="https://api.datacite.org/dois{}"
         )
 
 

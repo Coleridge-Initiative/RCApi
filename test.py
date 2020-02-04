@@ -138,8 +138,8 @@ class TestOpenAPIs (unittest.TestCase):
         meta, timing, message = schol.datacite.publication_lookup(doi)
 
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(meta['attributes']['doi'] == doi)
-        self.assertTrue(meta['attributes']['titles'][0]['title'] == title)
+        self.assertTrue(meta["attributes"]["doi"] == doi)
+        self.assertTrue(meta["attributes"]["titles"][0]["title"] == title)
 
         # error case
         doi = "10.00000/xxx"
@@ -150,11 +150,11 @@ class TestOpenAPIs (unittest.TestCase):
 
     def test_datacite_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
-        title = "Drivers in solar deployment in India: A state-level analysis"
+        title = "Empirical analysis of potential improvements for high voltage protective algorithms"
         meta, timing, message = schol.datacite.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(meta)
+        self.assertTrue(meta and meta["id"] == "10.5281/zenodo.3635395")
 
         title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
         meta, timing, message = schol.datacite.title_search(title)
@@ -166,17 +166,18 @@ class TestOpenAPIs (unittest.TestCase):
     def test_datacite_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         search_term = "NOAA NASA"
-        meta, timing, message = schol.datacite.full_text_search(search_term, limit=50, exact_match=True)
+        meta, timing, message = schol.datacite.full_text_search(search_term, limit=5, exact_match=True)
 
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(len(meta) == 50)
+        self.assertTrue(len(meta) == 5)
 
 
     def test_datacite__format_exact_quote (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         search_term = "NOAA NASA"
         exact_quote = schol.datacite._format_exact_quote(search_term)
-        self.assertTrue(exact_quote == "+NOAA%20+NASA")
+        self.assertTrue(exact_quote == '"NOAA+NASA"')
+
 
 if __name__ == "__main__":
     unittest.main()
