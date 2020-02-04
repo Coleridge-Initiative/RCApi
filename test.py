@@ -154,7 +154,13 @@ class TestOpenAPIs (unittest.TestCase):
         meta, timing, message = schol.datacite.title_search(title)
 
         print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
-        self.assertTrue(len(meta) == 25)
+        self.assertTrue(meta)
+
+        title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
+        meta, timing, message = schol.datacite.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        self.assertTrue(meta == None)
 
 
     def test_datacite_fulltext_search (self):

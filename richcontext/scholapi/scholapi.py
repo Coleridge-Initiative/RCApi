@@ -4,6 +4,7 @@
 from Bio import Entrez
 from bs4 import BeautifulSoup
 from collections import OrderedDict
+from difflib import SequenceMatcher
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -928,14 +929,29 @@ class _ScholInfra_DataCite (_ScholInfra):
         t0 = time.time()
 
         url = self._get_api_url("?query=titles.title:{}".format(self._format_exact_quote(title)))
+        
+        try:
+            response = requests.get(url)            
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                entries = json_response["data"]
+                max_score = 0.0
+                for entry in entries:
+                        titles = entry.get('attributes')['titles']
+                        for title_obj in titles:
+                            s = SequenceMatcher(None, title_obj['title'], title)
+                            if (s.ratio() > max_score):
+                                meta = entry
+                                max_score = s.ratio()
+            else:
+                meta = None
+                message = response.text
 
-        response = requests.get(url)
-        if response.status_code == 200:
-            json_response = json.loads(response.text)
-            meta = json_response["data"]
-        else:
+        except:
+            print(traceback.format_exc())
             meta = None
-            message = response.text
+            message = f"ERROR: {title}"
+            print(message)
 
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
