@@ -185,7 +185,7 @@ class TestOpenAPIs (unittest.TestCase):
 
         meta, timing, message = schol.core.publication_lookup(doi)
 
-        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
         self.assertTrue(meta["doi"] == doi)
         self.assertTrue(meta["title"].lower() == title)
 
@@ -194,6 +194,22 @@ class TestOpenAPIs (unittest.TestCase):
         meta, timing, message = schol.core.publication_lookup(doi)
         self.assertTrue(meta == None)
         self.assertTrue("Not found" == message)
+    
+    def test_core_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+        meta, timing, message = schol.core.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(meta and meta["doi"] == doi)
+
+        title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
+        meta, timing, message = schol.core.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(meta == None)
+        self.assertTrue(message == "Not found")
 
 if __name__ == "__main__":
     unittest.main()

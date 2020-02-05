@@ -1010,9 +1010,9 @@ class _ScholInfra_CORE (_ScholInfra):
         try: 
             token = self.parent.config["DEFAULT"]["core_apikey"]
             params = {"apiKey": token}
-            search_field = urllib.parse.quote("doi:\""+ identifier + "\"")
+            search_query = urllib.parse.quote("doi:\""+ identifier + "\"")
 
-            url = self._get_api_url("articles", "search", search_field + "?" + urllib.parse.urlencode(params) )
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
             response = requests.get(url)
 
             if response.status_code == 200:
@@ -1042,16 +1042,36 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
+        try:
+            token = self.parent.config["DEFAULT"]["core_apikey"]
+            params = {"apiKey": token}
+            search_query = urllib.parse.quote("title:\""+ title + "\"")
 
-        ##TODO
-        token = self.parent.config["DEFAULT"]["core_apikey"]
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
 
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"][0]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {title}"
+            print(message)
+        
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message     
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
         """
-        DataCite full-text search
+        CORE full-text search
         """
         meta = None
         timing = 0.0
