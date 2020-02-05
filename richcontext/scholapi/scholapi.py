@@ -776,6 +776,11 @@ class _ScholInfra_PubMed (_ScholInfra):
 
 
     def _full_text_get_ids (self, search_term, limit=None):
+        try:
+            limit = int(limit)
+        except ValueError: #if limit can't be casted into int
+            limit = None
+
         id_list = None
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
@@ -793,7 +798,7 @@ class _ScholInfra_PubMed (_ScholInfra):
 
                 id_list = handle["IdList"]
 
-            if limit != None and limit > 0 and isinstance(limit, int):
+            elif limit > 0:
                 handle = Entrez.read(Entrez.esearch(
                     db="pubmed",
                     retmax=limit,
