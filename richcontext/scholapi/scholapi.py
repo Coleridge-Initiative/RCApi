@@ -997,6 +997,74 @@ class _ScholInfra_DataCite (_ScholInfra):
         return meta, timing, message
 
 
+class _ScholInfra_CORE (_ScholInfra): 
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from CORE API given a DOI
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        try: 
+            token = self.parent.config["DEFAULT"]["core_apikey"]
+            params = {"apiKey": token}
+            search_field = urllib.parse.quote("doi:\""+ identifier + "\"")
+
+            url = self._get_api_url("articles", "search", search_field + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"][0]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except: 
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+    def title_search (self, title):
+        """
+        parse metadata from the CORE API query
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+
+        ##TODO
+        token = self.parent.config["DEFAULT"]["core_apikey"]
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message     
+
+    def full_text_search (self, search_term, limit=None, exact_match=None):
+        """
+        DataCite full-text search
+        """
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
+
+        ##TODO
+        token = self.parent.config["DEFAULT"]["core_apikey"]
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
 ######################################################################
 ## federated API access
 
@@ -1077,6 +1145,12 @@ class ScholInfraAPI:
             parent=self,
             name="DataCite",
             api_url="https://api.datacite.org/dois{}"
+        )
+
+        self.core = _ScholInfra_CORE(
+            parent=self,
+            name="CORE",
+            api_url="https://core.ac.uk:443/api-v2/{}/{}/{}"
         )
 
 

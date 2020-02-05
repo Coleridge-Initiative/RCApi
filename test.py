@@ -178,6 +178,22 @@ class TestOpenAPIs (unittest.TestCase):
         exact_quote = schol.datacite._format_exact_quote(search_term)
         self.assertTrue(exact_quote == '"NOAA+NASA"')
 
+    def test_core_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+
+        meta, timing, message = schol.core.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.datacite.name))
+        self.assertTrue(meta["doi"] == doi)
+        self.assertTrue(meta["title"].lower() == title)
+
+        # error case
+        doi = "10.00000/xxx"
+        meta, timing, message = schol.core.publication_lookup(doi)
+        self.assertTrue(meta == None)
+        self.assertTrue("Not found" == message)
 
 if __name__ == "__main__":
     unittest.main()
