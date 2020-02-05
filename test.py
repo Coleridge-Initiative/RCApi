@@ -178,6 +178,7 @@ class TestOpenAPIs (unittest.TestCase):
         exact_quote = schol.datacite._format_exact_quote(search_term)
         self.assertTrue(exact_quote == '"NOAA+NASA"')
 
+
     def test_core_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1371/journal.pone.0013969"
@@ -194,7 +195,8 @@ class TestOpenAPIs (unittest.TestCase):
         meta, timing, message = schol.core.publication_lookup(doi)
         self.assertTrue(meta == None)
         self.assertTrue("Not found" == message)
-    
+
+
     def test_core_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         doi = "10.1371/journal.pone.0013969"
@@ -210,6 +212,23 @@ class TestOpenAPIs (unittest.TestCase):
         print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
         self.assertTrue(meta == None)
         self.assertTrue(message == "Not found")
+
+
+    def test_core_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NASA NOAA coral"
+        
+        meta, timing, message = schol.core.full_text_search(search_term, limit=13) ##CORE limit value range: 10-100 
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 13)
+
+        meta, timing, message = schol.core.full_text_search(search_term, limit=2)  
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 10)
+
+        meta, timing, message = schol.core.full_text_search(search_term, limit=101)  
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 10)
 
 if __name__ == "__main__":
     unittest.main()

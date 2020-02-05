@@ -1077,10 +1077,35 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None 
         t0 = time.time()
+        try:
+            token = self.parent.config["DEFAULT"]["core_apikey"]
+            params = {"apiKey": token}
+            if limit:
+                params["pageSize"] = limit
+            if exact_match:
+                search_query = urllib.parse.quote("\""+ search_term + "\"")
+            else:
+                search_query = urllib.parse.quote(search_term)
+            
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
 
-        ##TODO
-        token = self.parent.config["DEFAULT"]["core_apikey"]
-
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {search_term}"
+            print(message)
+                    
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
 
