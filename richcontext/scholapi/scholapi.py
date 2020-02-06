@@ -1046,6 +1046,7 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
 
+
     def title_search (self, title):
         """
         parse metadata from the CORE API query
@@ -1079,6 +1080,7 @@ class _ScholInfra_CORE (_ScholInfra):
         
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message     
+
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
         """
@@ -1119,7 +1121,37 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
 
+    
+    def journal_lookup (self, identifier):
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
 
+        try:
+            params = self._get_core_apikey()
+            url = self._get_api_url("journals", "get", identifier + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+    
 ######################################################################
 ## federated API access
 

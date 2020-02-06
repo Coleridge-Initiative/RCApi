@@ -230,5 +230,18 @@ class TestOpenAPIs (unittest.TestCase):
         print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
         self.assertTrue(len(meta) == 10)
 
+
+    def test_core_journal_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        issn = "1932-6203"
+
+        meta, timing, message = schol.core.journal_lookup(issn)
+        self.assertTrue(meta["title"] == "PLoS ONE")
+
+        # error case
+        meta, timing, message = schol.core.journal_lookup("0000-0000")
+        self.assertTrue(meta == None)
+        self.assertTrue(message == 'Not found')
+
 if __name__ == "__main__":
     unittest.main()
