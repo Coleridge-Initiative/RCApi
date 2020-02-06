@@ -1007,6 +1007,11 @@ class _ScholInfra_DataCite (_ScholInfra):
 
 class _ScholInfra_CORE (_ScholInfra): 
 
+    def _get_core_apikey(self): 
+        key = self.parent.config["DEFAULT"]["core_apikey"]
+        return {"apiKey": key}
+
+
     def publication_lookup (self, identifier):
         """
         parse metadata returned from CORE API given a DOI
@@ -1016,8 +1021,7 @@ class _ScholInfra_CORE (_ScholInfra):
         message = None
         t0 = time.time()
         try: 
-            token = self.parent.config["DEFAULT"]["core_apikey"]
-            params = {"apiKey": token}
+            params = self._get_core_apikey()
             search_query = urllib.parse.quote("doi:\""+ identifier + "\"")
 
             url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
@@ -1051,8 +1055,7 @@ class _ScholInfra_CORE (_ScholInfra):
         message = None
         t0 = time.time()
         try:
-            token = self.parent.config["DEFAULT"]["core_apikey"]
-            params = {"apiKey": token}
+            params = self._get_core_apikey()
             search_query = urllib.parse.quote("title:\""+ title + "\"")
 
             url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
@@ -1086,12 +1089,11 @@ class _ScholInfra_CORE (_ScholInfra):
         message = None 
         t0 = time.time()
         try:
-            token = self.parent.config["DEFAULT"]["core_apikey"]
-            params = {"apiKey": token}
+            params = self._get_core_apikey()
             if limit:
                 params["pageSize"] = limit
             if exact_match:
-                search_query = urllib.parse.quote("\""+ search_term + "\"")
+                search_query = '"' + urllib.parse.quote_plus(search_term.strip()) + '"'
             else:
                 search_query = urllib.parse.quote(search_term)
             
