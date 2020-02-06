@@ -721,8 +721,11 @@ class _ScholInfra_Crossref (_ScholInfra):
         timing = 0.0
         message = None
 
+        if not limit:
+            limit = 1000
+
         t0 = time.time()
-        query = "query=%22{}%22/type/journal-article&rows=1000".format(urllib.parse.quote(search_term))
+        query = "query=%22{}%22/type/journal-article&rows={}".format(urllib.parse.quote(search_term), limit)
         url = self._get_api_url(query)
 
         response = requests.get(url).text
@@ -776,6 +779,11 @@ class _ScholInfra_PubMed (_ScholInfra):
 
 
     def _full_text_get_ids (self, search_term, limit=None):
+        try:
+            limit = int(limit)
+        except ValueError: #if limit can't be casted into int
+            limit = None
+
         id_list = None
         Entrez.email = self.parent.config["DEFAULT"]["email"]
 
@@ -793,7 +801,7 @@ class _ScholInfra_PubMed (_ScholInfra):
 
                 id_list = handle["IdList"]
 
-            if limit != None and limit > 0 and isinstance(limit, int):
+            elif limit > 0:
                 handle = Entrez.read(Entrez.esearch(
                     db="pubmed",
                     retmax=limit,
