@@ -725,7 +725,7 @@ class _ScholInfra_Crossref (_ScholInfra):
             limit = 1000
 
         t0 = time.time()
-        query = "query=%22{}%22/type/journal-article&rows={}".format(urllib.parse.quote(search_term),limit)
+        query = "query=%22{}%22/type/journal-article&rows={}".format(urllib.parse.quote(search_term), limit)
         url = self._get_api_url(query)
 
         response = requests.get(url).text
