@@ -298,5 +298,69 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(meta == expected)
 
 
+    def test_core_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+
+        meta, timing, message = schol.core.publication_lookup(doi)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(meta.doi() == doi)
+        self.assertTrue(meta.title().lower() == title)
+
+        # error case
+        doi = "10.00000/xxx"
+        meta, timing, message = schol.core.publication_lookup(doi)
+        self.assertTrue(meta == None)
+        self.assertTrue("Not found" == message)
+
+
+    def test_core_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+        meta, timing, message = schol.core.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(meta and meta["doi"] == doi)
+
+        title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
+        meta, timing, message = schol.core.title_search(title)
+
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(meta == None)
+        self.assertTrue(message == "Not found")
+
+
+    def test_core_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        search_term = "NASA NOAA coral"
+        
+        meta, timing, message = schol.core.full_text_search(search_term, limit=13) ##CORE limit value range: 10-100 
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 13)
+
+        meta, timing, message = schol.core.full_text_search(search_term, limit=2)  
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 10)
+
+        meta, timing, message = schol.core.full_text_search(search_term, limit=101)  
+        print("\ntime: {:.3f} ms - {}".format(timing, schol.core.name))
+        self.assertTrue(len(meta) == 10)
+
+
+    def test_core_journal_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        issn = "1932-6203"
+
+        meta, timing, message = schol.core.journal_lookup(issn)
+        self.assertTrue(meta["title"] == "PLoS ONE")
+
+        # error case
+        meta, timing, message = schol.core.journal_lookup("0000-0000")
+        self.assertTrue(meta == None)
+        self.assertTrue(message == 'Not found')
+
 if __name__ == "__main__":
     unittest.main()

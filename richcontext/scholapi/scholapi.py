@@ -28,6 +28,25 @@ import traceback
 import urllib.parse
 import xmltodict
 
+class RC_JSON():
+    def __init__(self, json_text, name="Generic"):
+        self.json_text = json_text
+        self.name = name
+
+    def doi(self):
+        return self.json_text["doi"]
+
+    def title(self):
+        return self.json_text["title"]
+
+    def raw(self):
+        return self.json_text
+
+
+class RC_CORE_JSON(RC_JSON):
+    def __init__(self, json_text, name="CORE"):
+        RC_JSON.__init__(self, json_text,name=name)
+
 
 class _ScholInfra:
     """
@@ -1031,6 +1050,153 @@ class _ScholInfra_DataCite (_ScholInfra):
         return meta, timing, message
 
 
+class _ScholInfra_CORE (_ScholInfra): 
+
+    def _get_core_apikey(self): 
+        key = self.parent.config["DEFAULT"]["core_apikey"]
+        return {"apiKey": key}
+
+
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from CORE API given a DOI
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        try: 
+            params = self._get_core_apikey()
+            search_query = urllib.parse.quote("doi:\""+ identifier + "\"")
+
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = RC_CORE_JSON(json_response["data"][0], name="CORE")
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except: 
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def title_search (self, title):
+        """
+        parse metadata from the CORE API query
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        try:
+            params = self._get_core_apikey()
+            search_query = urllib.parse.quote("title:\""+ title + "\"")
+
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"][0]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {title}"
+            print(message)
+        
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message     
+
+
+    def full_text_search (self, search_term, limit=None, exact_match=None):
+        """
+        CORE full-text search
+        """
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
+        try:
+            params = self._get_core_apikey()
+            if limit:
+                params["pageSize"] = limit
+            if exact_match:
+                search_query = '"' + urllib.parse.quote_plus(search_term.strip()) + '"'
+            else:
+                search_query = urllib.parse.quote(search_term)
+            
+            url = self._get_api_url("articles", "search", search_query + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {search_term}"
+            print(message)
+                    
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+    
+    def journal_lookup (self, identifier):
+        meta = None
+        timing = 0.0
+        message = None 
+        t0 = time.time()
+
+        try:
+            params = self._get_core_apikey()
+            url = self._get_api_url("journals", "get", identifier + "?" + urllib.parse.urlencode(params) )
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                json_response = json.loads(response.text)
+                if (json_response["status"] == "OK"):
+                    meta = json_response["data"]
+                else:
+                    meta = None
+                    message = json_response["status"]
+            else:
+                meta = None
+                message = response.text
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+    
 ######################################################################
 ## managed responses
 
