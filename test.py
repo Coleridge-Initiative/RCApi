@@ -100,18 +100,19 @@ class TestOpenAPIs (unittest.TestCase):
         title = "In Situ Carbon Dioxide and Methane Mole Fractions from the Los Angeles Megacity Carbon Project"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["attributes"]["doi"] == doi)
-            self.assertTrue(meta["attributes"]["titles"][0]["title"] == title)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.authors == ["Verhulst, Kristal"])
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
-            self.assertTrue("404" in message)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
+            self.assertTrue("404" in response.message)
 
 
     def test_datacite_title_search (self):
@@ -122,16 +123,17 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "10.5281/zenodo.3635395"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            self.assertTrue(meta and meta["id"] == expected)
+            response = source.title_search(title)
+            self.assertTrue(response.meta and response.meta["id"] == expected)
+            self.assertTrue(response.title() == title)
 
         # error case
         title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta == None)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta == None)
 
 
     def test_datacite_fulltext_search (self):
@@ -142,9 +144,9 @@ class TestOpenAPIs (unittest.TestCase):
         expected = 5
 
         if source.has_credentials():
-            meta, timing, message = source.full_text_search(search_term, limit=expected, exact_match=True)
-            source.report_perf(timing)
-            self.assertTrue(len(meta) == expected)
+            response = source.full_text_search(search_term, limit=expected, exact_match=True)
+            source.report_perf(response.timing)
+            self.assertTrue(len(response.meta) == expected)
 
 
     def test_datacite__format_exact_quote (self):

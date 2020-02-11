@@ -951,7 +951,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Datacite( meta, timing, message)
 
     
     def title_search (self, title):
@@ -998,7 +998,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Datacite(meta, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -1017,7 +1017,7 @@ class _ScholInfra_DataCite (_ScholInfra):
 
         if limit:
             url = url + "&page[size]={}".format(limit)
-        
+
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -1028,7 +1028,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Datacite(meta, timing, message)
 
 
 ######################################################################
@@ -1039,8 +1039,51 @@ class _ScholInfraResponse:
     manage the response from a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self):
+    def __init__ (self, meta, timing, message):
         self.meta = meta
+        self.timing = timing
+        self.message = message
+
+    def doi(self):
+        return None
+
+
+    def title(self):
+        return None
+
+
+    def authors(self):
+        return None
+
+
+    def url(self):
+        return None
+
+
+    def journal(self):
+        return None
+
+
+class _ScholInfraResponse_Datacite(_ScholInfraResponse):
+    ##TODO self.meta will either be a list or an object, how do we handle list case?
+
+    def doi(self):
+        return self.meta["attributes"]["doi"]
+
+
+    def title(self):
+        return self.meta["attributes"]["titles"][0]["title"]
+
+
+    def authors(self):
+        authors = []
+        for creator in self.meta["attributes"]["creators"]:
+            authors.append(creator["name"])
+        return authors
+
+
+    def journal(self):
+        return self.meta["attributes"]["publisher"]
 
 
 ######################################################################
