@@ -96,9 +96,6 @@ else:
     source.report_perf(timing)
 ```
 
-Check out the unit test code in `test.py` for more usage patterns per
-supported API.
-
 
 ## API Integrations
 
@@ -123,8 +120,11 @@ APIs used to retrieve metadata:
     + [Dimensions](https://docs.dimensions.ai/dsl/api.html)
     + [SSRN](https://www.ssrn.com/)
 
-See `docs/enrich_pubs.ipynb` for example API usage to pull the
-federated metadata for a publication.
+See the coding examples in the `test.py` unit test for usage patterns
+per supported API.
+
+
+## Literature
 
 For more background about *open access publications* see:
 

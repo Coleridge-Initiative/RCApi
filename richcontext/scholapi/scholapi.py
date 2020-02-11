@@ -1039,8 +1039,11 @@ class _ScholInfraResponse:
     manage the response from a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self):
+    def __init__ (self, parent=None, meta=None, timing=0, message=None):
+        self.parent = parent
         self.meta = meta
+        self.timing = timing
+        self.message = message
 
 
 ######################################################################
