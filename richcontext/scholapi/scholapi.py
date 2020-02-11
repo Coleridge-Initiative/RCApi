@@ -42,11 +42,13 @@ class _ScholInfra:
         self.api_obj = None
 
 
-    def _get_api_url (self, *args):
+    def has_credentials (self):
         """
-        construct a URL to query the API
+        returns `True` if the parent object's configuration includes
+        the parameters required as credentials for a given discovery
+        service API
         """
-        return self.api_url.format(*args)
+        return True
 
 
     @classmethod
@@ -56,6 +58,20 @@ class _ScholInfra:
         """
         t1 = time.time()
         return (t1 - t0) * 1000.0
+
+
+    def report_perf (self, timing):
+        """
+        report the performance for a given API response
+        """
+        print("\ntime: {:.3f} ms - {}".format(timing, self.name))
+
+
+    def _get_api_url (self, *args):
+        """
+        construct a URL to query the API
+        """
+        return self.api_url.format(*args)
 
 
     @classmethod
@@ -416,6 +432,11 @@ class _ScholInfra_Dimensions (_ScholInfra):
     https://docs.dimensions.ai/dsl/
     """
 
+    def has_credentials (self):
+        required_creds = set([ "email", "dimensions_password" ])
+        return required_creds.issubset(self.parent.config["DEFAULT"])
+
+
     def _login (self):
         """
         login to the Dimensions API through their 'DSL'
@@ -502,6 +523,11 @@ class _ScholInfra_RePEc (_ScholInfra):
     """
     https://ideas.repec.org/api.html
     """
+
+    def has_credentials (self):
+        required_creds = set([ "repec_token" ])
+        return required_creds.issubset(self.parent.config["DEFAULT"])
+
 
     def _get_cgi_url (self, title):
         """
@@ -1152,6 +1178,18 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
     
+######################################################################
+## managed responses
+
+class _ScholInfraResponse:
+    """
+    manage the response from a specific Scholarly Infrastructure API
+    """
+
+    def __init__ (self):
+        self.meta = meta
+
+
 ######################################################################
 ## federated API access
 
