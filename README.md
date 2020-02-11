@@ -10,7 +10,7 @@ Development of the Rich Context knowledge graph uses this library to:
   * locate open access publications
   * reconcile journal references
   * reconcile author profiles
-  * reconcile keyword mesh
+  * reconcile keyword taxonomy
 
 This library has been guided by collaborative work on community
 building and metadata exchange to improve Scholarly Infrastructure,
@@ -48,8 +48,9 @@ pip install -r requirements.txt
 Then copy the configuration file template `rc_template.cfg` to `rc.cfg`
 and populate it with your credentials.
 
-NB: be careful not to commit the `rc.cfg` file in Git since it
-contains sensitive data such as passwords.
+NB: be careful not to commit the `rc.cfg` file in Git since by
+definition it will contain sensitive data, e.g., your passwords.
+
 
 Parameters used in the configuration file include:
 
@@ -78,38 +79,49 @@ from richcontext import scholapi as rc_scholapi
 
 # initialize the federated API access
 schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
+source = schol.openaire
 
 # search parameters for example publications
 title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
 
 # run it...
-meta, timing, message = schol.openaire.title_search(title)
+meta, timing, message = source.title_search(title)
 
+# report results
 if message:
     # error case
     print(message)
 else:
-    # report results
     print(meta)
-    print("\ntime: {:.3f} ms - {}".format(timing, schol.openaire.name))
+    source.report_perf(timing)
 ```
+
+Check out the unit test code in `test.py` for more usage patterns per
+supported API.
 
 
 ## API Integrations
 
 APIs used to retrieve metadata:
 
-  * [OpenAIRE](https://develop.openaire.eu/)
-  * [RePEc](https://ideas.repec.org/api.html)
-  * [Unpaywall](https://unpaywall.org/products/api)
-  * [Crossref](https://www.crossref.org/services/metadata-delivery/)
-  * [DataCite](https://support.datacite.org/docs/api)
-  * [PubMed](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
-  * [EuropePMC](https://europepmc.org/RestfulWebService)
-  * [Semantic Scholar](http://api.semanticscholar.org/)
-  * [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
-  * [Dimensions](https://docs.dimensions.ai/dsl/api.html)
-  * [SSRN](https://www.ssrn.com/)
+  * *PubMed family*
+    + [PubMed](https://www.ncbi.nlm.nih.gov/books/NBK25501/)
+    + [EuropePMC](https://europepmc.org/RestfulWebService)
+
+  * *Scholix family*
+    + [OpenAIRE](https://develop.openaire.eu/)
+    + [Crossref](https://www.crossref.org/services/metadata-delivery/)
+    + [DataCite](https://support.datacite.org/docs/api)
+
+  * *OA family*
+    + [Unpaywall](https://unpaywall.org/products/api)
+    + [dissemin](https://dissemin.readthedocs.io/en/latest/api.html)
+    + [Semantic Scholar](http://api.semanticscholar.org/)
+
+  * *Misc.*
+    + [RePEc](https://ideas.repec.org/api.html)
+    + [Dimensions](https://docs.dimensions.ai/dsl/api.html)
+    + [SSRN](https://www.ssrn.com/)
 
 See `docs/enrich_pubs.ipynb` for example API usage to pull the
 federated metadata for a publication.
@@ -127,17 +139,20 @@ The State of OA: A large-scale analysis of the prevalence and impact of Open Acc
 First, be sure that you're testing the source and not from an
 installed library.
 
-Then run unit tests for the APIs which do not require credentials:
+Then run unit tests on the APIs for which you have credentials:
 
 ```
 python test.py
 ```
 
 
-## To Do
+## Contributions
 
 If you'd like to contribute, please see our listings of
-[*good first issues*](https://github.com/Coleridge-Initiative/RCApi/labels/good%20first%20issue)
+[*good first issues*](https://github.com/Coleridge-Initiative/RCApi/labels/good%20first%20issue).
+
+For info about joining the AI team working on Rich Context, see
+<https://github.com/Coleridge-Initiative/RCGraph/blob/master/SKILLS.md>
 
 
 ## Kudos

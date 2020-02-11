@@ -4,7 +4,12 @@
 
 2020-02-??
 
+  - added `has_credentials()` test for config settings for each API
+
+  - added `report_perf()` to standardize format for performance reporting
+
   - added integration of DataCite API
+
   - fixed the `limit` parameter for Crossref `full_text_search()`
 
 
