@@ -85,15 +85,28 @@ source = schol.openaire
 title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
 
 # run it...
-meta, timing, message = source.title_search(title)
+if source.has_credentials():
+    meta, timing, message = source.title_search(title)
 
-# report results
-if message:
-    # error case
-    print(message)
-else:
-    print(meta)
-    source.report_perf(timing)
+    # report results
+    if message:
+        # error case
+        print(message)
+    else:
+        print(meta)
+        source.report_perf(timing)
+```
+
+
+## Testing
+
+First, be sure that you're testing the source and not from an
+installed library.
+
+Then run unit tests on the APIs for which you have credentials:
+
+```
+python test.py
 ```
 
 
@@ -117,6 +130,7 @@ APIs used to retrieve metadata:
 
   * *Misc.*
     + [RePEc](https://ideas.repec.org/api.html)
+    + [CORE](https://core.ac.uk/services/api/)
     + [Dimensions](https://docs.dimensions.ai/dsl/api.html)
     + [SSRN](https://www.ssrn.com/)
 
@@ -132,18 +146,6 @@ For more background about *open access publications* see:
 The State of OA: A large-scale analysis of the prevalence and impact of Open Access articles  
 *PeerJ Preprints* 5:e3119v1  
 <https://doi.org/10.7287/peerj.preprints.3119v1>
-
-
-## Testing
-
-First, be sure that you're testing the source and not from an
-installed library.
-
-Then run unit tests on the APIs for which you have credentials:
-
-```
-python test.py
-```
 
 
 ## Contributions

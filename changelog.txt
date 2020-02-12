@@ -1,5 +1,12 @@
 # `richcontext.scholapi` changelog
 
+## 1.1.2
+
+2020-02-??
+
+  - added integration of CORE API
+
+
 ## 1.1.1
 
 2020-02-11
