@@ -1033,7 +1033,12 @@ class _ScholInfra_DataCite (_ScholInfra):
 
 class _ScholInfra_CORE (_ScholInfra): 
 
-    def _get_core_apikey(self): 
+    def has_credentials (self):
+        required_creds = set([ "core_apikey" ])
+        return required_creds.issubset(self.parent.config["DEFAULT"])
+
+
+    def _get_core_apikey (self): 
         key = self.parent.config["DEFAULT"]["core_apikey"]
         return {"apiKey": key}
 
@@ -1055,6 +1060,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
             if response.status_code == 200:
                 json_response = json.loads(response.text)
+
                 if (json_response["status"] == "OK"):
                     meta = json_response["data"][0]
                 else:
@@ -1081,6 +1087,7 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
+
         try:
             params = self._get_core_apikey()
             search_query = urllib.parse.quote("title:\""+ title + "\"")
@@ -1090,6 +1097,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
             if response.status_code == 200:
                 json_response = json.loads(response.text)
+
                 if (json_response["status"] == "OK"):
                     meta = json_response["data"][0]
                 else:
@@ -1116,8 +1124,10 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None 
         t0 = time.time()
+
         try:
             params = self._get_core_apikey()
+
             if limit:
                 params["pageSize"] = limit
             if exact_match:
@@ -1130,6 +1140,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
             if response.status_code == 200:
                 json_response = json.loads(response.text)
+
                 if (json_response["status"] == "OK"):
                     meta = json_response["data"]
                 else:
@@ -1161,6 +1172,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
             if response.status_code == 200:
                 json_response = json.loads(response.text)
+
                 if (json_response["status"] == "OK"):
                     meta = json_response["data"]
                 else:
@@ -1177,6 +1189,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
+
     
 ######################################################################
 ## managed responses
