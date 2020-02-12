@@ -104,7 +104,7 @@ class TestOpenAPIs (unittest.TestCase):
             source.report_perf(response.timing)
             self.assertTrue(response.doi() == doi)
             self.assertTrue(response.title() == title)
-            self.assertTrue(response.authors == ["Verhulst, Kristal"])
+            self.assertTrue(response.authors() == ["Verhulst, Kristal"])
 
         # error case
         doi = "10.00000/xxx"
@@ -121,11 +121,14 @@ class TestOpenAPIs (unittest.TestCase):
 
         title = "Empirical analysis of potential improvements for high voltage protective algorithms"
         expected = "10.5281/zenodo.3635395"
+        journal = "Zenodo"
 
         if source.has_credentials():
             response = source.title_search(title)
             self.assertTrue(response.meta and response.meta["id"] == expected)
             self.assertTrue(response.title() == title)
+            self.assertTrue(response.doi() == expected)
+            self.assertTrue(response.journal() == journal)
 
         # error case
         title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
@@ -144,9 +147,10 @@ class TestOpenAPIs (unittest.TestCase):
         expected = 5
 
         if source.has_credentials():
-            response = source.full_text_search(search_term, limit=expected, exact_match=True)
-            source.report_perf(response.timing)
-            self.assertTrue(len(response.meta) == expected)
+            responses = source.full_text_search(search_term, limit=expected, exact_match=True)
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) == expected)
+
 
 
     def test_datacite__format_exact_quote (self):

@@ -125,8 +125,8 @@ class _ScholInfra:
         :param exact_match: Some APIs allow a flag to turn off exact matches.
         :type limit: bool.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: list (_ScholInfraResponse(meta, timing, message))
+            - meta - publication JSON text from search results.
             - timing - elasped system time in seconds.
             - message - an optional error message.
         """
@@ -147,8 +147,8 @@ class _ScholInfra:
         :param title: Query term to locate a specific publications.
         :type title: str.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: _ScholInfraResponse(meta, timing, message)
+            - meta - publication JSON text from search results.
             - timing - elasped system time in milliseconds.
             - message - an optional error message.
         """
@@ -171,8 +171,8 @@ class _ScholInfra:
         :param identifier: DOI used to locate a specific publications.
         :type identifier: str.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: _ScholInfraResponse(self, meta, timing, message))
+            - meta - publication JSON text from search results.
             - timing - elasped system time in milliseconds.
             - message - an optional error message.
         """
@@ -951,7 +951,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return _ScholInfraResponse_Datacite( meta, timing, message)
+        return _ScholInfraResponse_Datacite(self, meta, timing, message)
 
     
     def title_search (self, title):
@@ -998,7 +998,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return _ScholInfraResponse_Datacite(meta, timing, message)
+        return _ScholInfraResponse_Datacite(self, meta, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -1028,7 +1028,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return _ScholInfraResponse_Datacite(meta, timing, message)
+        return [_ScholInfraResponse_Datacite(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Datacite(self, meta, timing, message)]
 
 
 ######################################################################
@@ -1039,7 +1039,8 @@ class _ScholInfraResponse:
     manage the response from a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self, meta, timing, message):
+    def __init__ (self, parent=None, meta=None, timing=None, message=None):
+        self.parent = parent
         self.meta = meta
         self.timing = timing
         self.message = message
@@ -1065,7 +1066,6 @@ class _ScholInfraResponse:
 
 
 class _ScholInfraResponse_Datacite(_ScholInfraResponse):
-    ##TODO self.meta will either be a list or an object, how do we handle list case?
 
     def doi(self):
         return self.meta["attributes"]["doi"]
@@ -1076,10 +1076,11 @@ class _ScholInfraResponse_Datacite(_ScholInfraResponse):
 
 
     def authors(self):
-        authors = []
-        for creator in self.meta["attributes"]["creators"]:
-            authors.append(creator["name"])
-        return authors
+        return [creator["name"] for creator in self.meta["attributes"]["creators"]]
+
+
+    def url(self):
+        return self.meta["attributes"]["url"]
 
 
     def journal(self):
