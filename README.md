@@ -57,7 +57,7 @@ Parameters used in the configuration file include:
 | parameter | value | 
 | --- | --- |
 | `chrome_exe_path` | path/to/chrome.exe |
-| `core_api_key` | CORE API key |
+| `core_apikey` | CORE API key |
 | `dimensions_password` | Dimensions API password |
 | `elsevier_api_key` | Elsvier API key |
 | `email` | personal email address |
