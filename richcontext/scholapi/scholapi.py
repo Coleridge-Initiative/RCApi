@@ -801,7 +801,7 @@ class _ScholInfra_PubMed (_ScholInfra):
                     meta = parsed
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_PubMed(self, meta, timing, message)
 
 
     def _full_text_get_ids (self, search_term, limit=None):
@@ -1045,6 +1045,7 @@ class _ScholInfraResponse:
         self.timing = timing
         self.message = message
 
+
     def doi(self):
         return None
 
@@ -1063,6 +1064,52 @@ class _ScholInfraResponse:
 
     def journal(self):
         return None
+
+
+    def serialize(self):
+        return self.meta
+
+
+class _ScholInfraResponse_PubMed(_ScholInfraResponse):
+    
+    def pdmid(self):
+        return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
+
+
+    def doi(self):
+        try:
+            pid_list = self.meta.get("MedlineCitation", {}).get("Article", {}).get("ELocationID")
+            if isinstance(pid_list,list):
+                dois = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                if len(dois) > 0:
+                    return dois[0]
+
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                   return pid_list["#text"]
+        except:
+            return None
+
+
+    def title(self):
+        title = None
+        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
+        if article_meta.get("ArticleTitle"):
+            if type(article_meta.get("ArticleTitle")) is str:
+                title = article_meta.get("ArticleTitle")
+            elif type(article_meta.get("ArticleTitle")) is dict:
+                title = article_meta.get("ArticleTitle", {}).get("#text")
+        return title
+
+
+    def journal(self):
+        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
+        return article_meta.get("Journal", {}).get("Title")
+
+
+    def issn(self):
+        return self.meta.get("ISOAbbreviation") if self.meta else None
+
 
 
 class _ScholInfraResponse_Datacite(_ScholInfraResponse):
