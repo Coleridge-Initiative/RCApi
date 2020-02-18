@@ -384,6 +384,7 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(meta == None)
             self.assertTrue(message == 'Not found')
 
+
     def test_orcid_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.orcid
@@ -399,6 +400,7 @@ class TestOpenAPIs (unittest.TestCase):
         source.report_perf(timing)
         #This number may change in the future
         self.assertTrue(meta is None)
+
 
     def test_orcid_affiliations (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
@@ -432,6 +434,7 @@ class TestOpenAPIs (unittest.TestCase):
         source.report_perf(timing)
         #This number may change in the future
         self.assertTrue(meta is None)   
+
 
 if __name__ == "__main__":
     unittest.main()
