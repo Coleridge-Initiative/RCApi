@@ -132,6 +132,7 @@ APIs used to retrieve metadata:
     + [RePEc](https://ideas.repec.org/api.html)
     + [CORE](https://core.ac.uk/services/api/)
     + [Dimensions](https://docs.dimensions.ai/dsl/api.html)
+    + [ORCID](https://www.orcid.org/)
     + [SSRN](https://www.ssrn.com/)
 
 See the coding examples in the `test.py` unit test for usage patterns
