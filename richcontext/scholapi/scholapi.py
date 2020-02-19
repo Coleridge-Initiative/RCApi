@@ -1208,7 +1208,7 @@ class _ScholInfra_ORCID (_ScholInfra):
             xml = xmltodict.parse(response.text, xml_attribs=False)
 
             if xml is not None:
-                xml = (xml['activities:works'] or {}).get('activities:group')
+                xml = (xml["activities:works"] or {}).get("activities:group")
                 meta = json.loads(json.dumps(xml))
         except:
             print(traceback.format_exc())
@@ -1233,6 +1233,7 @@ class _ScholInfra_ORCID (_ScholInfra):
             url = self._get_api_url(identifier, "employments")
             response = requests.get(url)
             xml = xmltodict.parse(response.text, xml_attribs=False)
+
             if xml is not None:
                 xml = (xml["activities:employments"] or {}).get("employment:employment-summary")
                 meta = json.loads(json.dumps(xml))
@@ -1254,10 +1255,12 @@ class _ScholInfra_ORCID (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
+
         try:
             url = self._get_api_url(identifier, "fundings")
             response = requests.get(url)
             xml = xmltodict.parse(response.text, xml_attribs=False)
+
             if xml is not None:
                 xml = (xml["activities:fundings"] or {}).get("activities:group")
                 meta = json.loads(json.dumps(xml))
