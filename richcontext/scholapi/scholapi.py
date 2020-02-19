@@ -1190,7 +1190,90 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = self._mark_elapsed_time(t0)
         return meta, timing, message
 
-    
+
+class _ScholInfra_ORCID (_ScholInfra): 
+        
+    def publication_lookup (self, identifier):
+        """
+        parse metadata returned from ORCID API given an ORCID identifier
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        
+        try:
+            url = self._get_api_url(identifier, "works")
+            response = requests.get(url)
+            xml = xmltodict.parse(response.text, xml_attribs=False)
+
+            if xml is not None:
+                xml = (xml["activities:works"] or {}).get("activities:group")
+                meta = json.loads(json.dumps(xml))
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def affiliations (self, identifier):
+        """
+        fetches individual's employment details from ORCID 
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+
+        try:
+            url = self._get_api_url(identifier, "employments")
+            response = requests.get(url)
+            xml = xmltodict.parse(response.text, xml_attribs=False)
+
+            if xml is not None:
+                xml = (xml["activities:employments"] or {}).get("employment:employment-summary")
+                meta = json.loads(json.dumps(xml))
+        except: 
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def funding (self, identifier):
+        """
+        fetches individuals funding details from ORCID 
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+
+        try:
+            url = self._get_api_url(identifier, "fundings")
+            response = requests.get(url)
+            xml = xmltodict.parse(response.text, xml_attribs=False)
+
+            if xml is not None:
+                xml = (xml["activities:fundings"] or {}).get("activities:group")
+                meta = json.loads(json.dumps(xml))
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message)
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
 ######################################################################
 ## managed responses
 
@@ -1292,6 +1375,12 @@ class ScholInfraAPI:
             parent=self,
             name="CORE",
             api_url="https://core.ac.uk:443/api-v2/{}/{}/{}"
+        )
+
+        self.orcid = _ScholInfra_ORCID (
+            parent=self,
+            name="ORCID",
+            api_url="https://pub.orcid.org/v2.0/{}/{}"
         )
 
 
