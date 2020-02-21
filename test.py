@@ -315,5 +315,143 @@ class TestOpenAPIs (unittest.TestCase):
     #         self.assertTrue(meta == expected)
 
 
+    def test_core_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.core
+
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+
+        if source.has_credentials():
+            meta, timing, message = source.publication_lookup(doi)
+            source.report_perf(timing)
+            self.assertTrue(meta["doi"] == doi)
+            self.assertTrue(meta["title"].lower() == title)
+
+        # error case
+        doi = "10.00000/xxx"
+
+        if source.has_credentials():
+            meta, timing, message = source.publication_lookup(doi)
+            self.assertTrue(meta == None)
+            self.assertTrue("Not found" == message)
+
+
+    def test_core_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.core
+
+        doi = "10.1371/journal.pone.0013969"
+        title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+
+        if source.has_credentials():
+            meta, timing, message = source.title_search(title)
+            source.report_perf(timing)
+            self.assertTrue(meta and meta["doi"] == doi)
+
+        # error case
+        title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
+
+        if source.has_credentials():
+            meta, timing, message = source.title_search(title)
+            source.report_perf(timing)
+            self.assertTrue(meta == None)
+            self.assertTrue(message == "Not found")
+
+
+    def test_core_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.core
+
+        search_term = "NASA NOAA coral"
+        
+        if source.has_credentials():
+            # CORE limit value range: 10-100 
+            meta, timing, message = source.full_text_search(search_term, limit=13)
+            source.report_perf(timing)
+            self.assertTrue(len(meta) == 13)
+
+            meta, timing, message = source.full_text_search(search_term, limit=2)  
+            source.report_perf(timing)
+            self.assertTrue(len(meta) == 10)
+
+            meta, timing, message = source.full_text_search(search_term, limit=101)  
+            source.report_perf(timing)
+            self.assertTrue(len(meta) == 10)
+
+
+    def test_core_journal_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.core
+
+        issn = "1932-6203"
+        expected = "PLoS ONE"
+
+        if source.has_credentials():
+            meta, timing, message = source.journal_lookup(issn)
+            source.report_perf(timing)
+            self.assertTrue(meta["title"] == expected)
+
+        # error case
+        issn = "0000-0000"
+
+        if source.has_credentials():
+            meta, timing, message = source.journal_lookup(issn)
+            source.report_perf(timing)
+            self.assertTrue(meta == None)
+            self.assertTrue(message == 'Not found')
+
+
+    def test_orcid_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.publication_lookup(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 137)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.publication_lookup(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)
+
+
+    def test_orcid_affiliations (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.affiliations(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 3)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.affiliations(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)
+
+
+    def test_orcid_funding (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.funding(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 17)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.funding(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)   
+
+
 if __name__ == "__main__":
     unittest.main()

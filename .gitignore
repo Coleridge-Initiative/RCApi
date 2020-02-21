@@ -27,5 +27,6 @@ rcapi_testing
 
 # editor junk
 .DS_Store
+.vscode
 **~
 .vscode/
