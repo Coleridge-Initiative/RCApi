@@ -436,7 +436,7 @@ class TestOpenAPIs (unittest.TestCase):
         title = "Essential ocean variables for global sustained observations of biodiversity and ecosystem changes"
         doi = "10.1111/gcb.14108"
         meta, timing, message = source.publication_lookup(doi)
-        print(meta)
+        
         source.report_perf(timing)
         self.assertTrue(meta["DOI"] == doi)
         self.assertTrue(meta["TITLE"] == title)
@@ -446,6 +446,57 @@ class TestOpenAPIs (unittest.TestCase):
         meta, timing, message = source.publication_lookup(title)
         source.report_perf(timing)
         self.assertTrue(meta is None)
+    
+    
+    def test_orcid_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.publication_lookup(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 137)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.publication_lookup(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)
+
+
+    def test_orcid_affiliations (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.affiliations(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 3)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.affiliations(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)
+
+
+    def test_orcid_funding (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.orcid
+
+        orcid = "0000-0002-8139-2960" #Julia Lane
+        meta, timing, message = source.funding(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(len(meta) == 17)
+
+        orcid = "0000-0002-0735-6312"
+        meta, timing, message = source.funding(orcid)
+        source.report_perf(timing)
+        #This number may change in the future
+        self.assertTrue(meta is None)   
 
 
 if __name__ == "__main__":
