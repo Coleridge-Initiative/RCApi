@@ -1278,21 +1278,21 @@ class _ScholInfra_ORCID (_ScholInfra):
 
 class _ScholInfra_NSF_PAR (_ScholInfra): 
 
-    def _request_data(self, search_url, export_url): 
-    
+    def _request_data (self, search_url, export_url): 
         with requests.Session() as session:
             chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]                
             browser = webdriver.Chrome(executable_path = chrome_path)
             browser.get(search_url)        
 
             request_cookies_browser = browser.get_cookies()
-            [session.cookies.set(c['name'], c['value']) for c in request_cookies_browser]
+            [session.cookies.set(c["name"], c["value"]) for c in request_cookies_browser]
 
             resp = session.post(export_url)
-            reader = csv.DictReader(io.StringIO(resp.content.decode('utf-8'))) 
+            reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8"))) 
             json_data = json.dumps(list(reader))
             json_data = json.loads(json_data)  
             browser.quit()      
+
         return json_data
 
 
