@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 import cProfile
 import configparser
 import crossref_commons.retrieval
+import csv
 import dimcli
 import json
 import io
@@ -26,6 +27,7 @@ import sys
 import time
 import traceback
 import urllib.parse
+import warnings
 import xmltodict
 
 
@@ -1192,7 +1194,7 @@ class _ScholInfra_CORE (_ScholInfra):
 
 
 class _ScholInfra_ORCID (_ScholInfra): 
-        
+
     def publication_lookup (self, identifier):
         """
         parse metadata returned from ORCID API given an ORCID identifier
@@ -1201,7 +1203,7 @@ class _ScholInfra_ORCID (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
-        
+
         try:
             url = self._get_api_url(identifier, "works")
             response = requests.get(url)
@@ -1274,6 +1276,116 @@ class _ScholInfra_ORCID (_ScholInfra):
         return meta, timing, message
 
 
+class _ScholInfra_NSF_PAR (_ScholInfra): 
+
+    def _request_data (self, search_url, export_url): 
+        with requests.Session() as session:
+            chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]                
+            browser = webdriver.Chrome(executable_path = chrome_path)
+            browser.get(search_url)        
+
+            request_cookies_browser = browser.get_cookies()
+            [session.cookies.set(c["name"], c["value"]) for c in request_cookies_browser]
+
+            resp = session.post(export_url)
+            reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8"))) 
+            json_data = json.dumps(list(reader))
+            json_data = json.loads(json_data)  
+            browser.quit()      
+
+        return json_data
+
+
+    def full_text_search (self, search_term, limit=None, exact_match=True):
+        """
+        NSF PAR full text search for publications
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+
+        if exact_match:
+            warnings.warn("Exact Match is not supported by {}, ignoring this argument".format(self.name))
+
+        try: 
+            search_url = self._get_api_url("search", "fulltext:" + urllib.parse.quote(search_term))
+            export_url = self._get_api_url("export/format:csv", "fulltext:" + urllib.parse.quote(search_term))
+
+            json_data = self._request_data(search_url, export_url)
+            
+            if limit and limit > 0 and limit < len(json_data):
+                meta = json_data[:limit]
+            else:
+                meta = json_data
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {search_term}"
+            print(message) 
+
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def title_search (self, title):
+        """
+        NSF PAR title search for a publication
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        
+        try:
+            search_url = self._get_api_url("search", "title:" + urllib.parse.quote(title))
+            export_url = self._get_api_url("export/format:csv", "title:" + urllib.parse.quote(title))
+ 
+            json_data = self._request_data(search_url, export_url)
+            
+            if  json_data and len(json_data) > 0:
+                meta = json_data[0]
+            else:
+                meta = None
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {title}"
+            print(message) 
+        
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+
+    def publication_lookup (self, identifier):
+        """
+        NSF PAR publication look using DOI string
+        """
+        meta = None
+        timing = 0.0
+        message = None
+        t0 = time.time()
+        
+        try:
+            search_url = self._get_api_url("search", "identifier:" + urllib.parse.quote(identifier))
+            export_url = self._get_api_url("export/format:csv", "identifier:" + urllib.parse.quote(identifier))
+ 
+            json_data = self._request_data(search_url, export_url)
+            
+            if  json_data and len(json_data) > 0:
+                meta = json_data[0]
+            else:
+                meta = None
+        except:
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {identifier}"
+            print(message) 
+        
+        timing = self._mark_elapsed_time(t0)
+        return meta, timing, message
+
+    
 ######################################################################
 ## managed responses
 
@@ -1369,19 +1481,25 @@ class ScholInfraAPI:
             parent=self,
             name="DataCite",
             api_url="https://api.datacite.org/dois{}"
-        )
+            )
 
         self.core = _ScholInfra_CORE(
             parent=self,
             name="CORE",
             api_url="https://core.ac.uk:443/api-v2/{}/{}/{}"
-        )
+            )
 
         self.orcid = _ScholInfra_ORCID (
             parent=self,
             name="ORCID",
             api_url="https://pub.orcid.org/v2.0/{}/{}"
-        )
+            )
+
+        self.nsfPar = _ScholInfra_NSF_PAR(
+            parent=self,
+            name="NSF PAR",
+            api_url="https://par.nsf.gov/{}/{}"
+            )
 
 
     ## profiling utilities

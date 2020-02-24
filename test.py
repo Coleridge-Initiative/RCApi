@@ -385,6 +385,69 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(message == 'Not found')
 
 
+    def test_nsf_par_fulltext_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.nsfPar
+
+        ##Please note, these numbers may change as new publications are added
+        search_term = "NASA NOAA coral"
+        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
+        source.report_perf(timing)
+        self.assertTrue(len(meta) == 13)
+
+        meta, timing, message = source.full_text_search(search_term, limit=-1, exact_match=True)
+        source.report_perf(timing)
+        self.assertTrue(len(meta) == 15)
+
+        meta, timing, message = source.full_text_search(search_term, limit=1000, exact_match=True)
+        source.report_perf(timing)
+        self.assertTrue(len(meta) == 15)
+
+        #Won't find any
+        search_term = "dlkadngeonr3q0984gqn839g"
+        meta, timing, message = source.full_text_search(search_term, limit=13)
+        source.report_perf(timing)
+        self.assertTrue(len(meta) == 0)
+
+
+    def test_nsf_par_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.nsfPar
+
+        ##Please note, these numbers may change as new publications are added
+        title = "Essential ocean variables for global sustained observations of biodiversity and ecosystem changes"
+        doi = "10.1111/gcb.14108"
+        meta, timing, message = source.title_search(title)
+        source.report_perf(timing)
+        self.assertTrue(meta["DOI"] == doi)
+
+        #Won't find any
+        title = "dlkadngeonr3q0984gqn839g"
+        meta, timing, message = source.title_search(title)
+        source.report_perf(timing)
+        self.assertTrue(meta is None)
+
+
+    def test_nsf_par_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.nsfPar
+
+        ##Please note, these numbers may change as new publications are added
+        title = "Essential ocean variables for global sustained observations of biodiversity and ecosystem changes"
+        doi = "10.1111/gcb.14108"
+        meta, timing, message = source.publication_lookup(doi)
+        
+        source.report_perf(timing)
+        self.assertTrue(meta["DOI"] == doi)
+        self.assertTrue(meta["TITLE"] == title)
+
+        #Error case
+        doi = "10.00000/xxx"
+        meta, timing, message = source.publication_lookup(title)
+        source.report_perf(timing)
+        self.assertTrue(meta is None)
+    
+    
     def test_orcid_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.orcid

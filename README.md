@@ -130,8 +130,9 @@ APIs used to retrieve metadata:
 
   * *Misc.*
     + [RePEc](https://ideas.repec.org/api.html)
-    + [CORE](https://core.ac.uk/services/api/)
+    + [NSF-PAR](https://par.nsf.gov/search/)
     + [ORCID](https://www.orcid.org/)
+    + [CORE](https://core.ac.uk/services/api/)
     + [Dimensions](https://docs.dimensions.ai/dsl/api.html)
     + [SSRN](https://www.ssrn.com/)
 
