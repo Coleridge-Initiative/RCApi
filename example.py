@@ -19,7 +19,8 @@ if __name__ == "__main__":
 
     # initialize the API access
     schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg", logger=None)
-    source = schol.datacite
+    #source = schol.datacite
+    source = schol.nsfPar
 
     # enable this for profiling -- which is quite verbose!
     enable_profiling = False # True
@@ -31,10 +32,12 @@ if __name__ == "__main__":
     doi = "10.1016/j.appet.2017.07.006"
     issn = "1932-6203"
     title = "Empirical analysis of potential improvements for high voltage protective algorithms"
+    search_term = "NASA NOAA coral"
 
     # run it...
     if source.has_credentials():
-        meta, timing, message = source.title_search(title)
+        #meta, timing, message = source.title_search(title)
+        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
 
     # report results
     if message:
