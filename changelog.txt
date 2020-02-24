@@ -4,6 +4,7 @@
 
 2020-02-??
 
+  - added integration of NSF-PAR
   - added integration of ORCID API
   - added integration of CORE API
 
