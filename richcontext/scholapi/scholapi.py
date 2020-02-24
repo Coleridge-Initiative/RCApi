@@ -919,7 +919,7 @@ class _ScholInfra_PubMed (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_PubMed(self, meta, timing, message, False)
 
 
 class _ScholInfra_DataCite (_ScholInfra): 
@@ -1313,8 +1313,36 @@ class _ScholInfraResponse:
         return self.meta
 
 
+class _ScholInfraResponse_Datacite(_ScholInfraResponse):
+
+    def doi(self):
+        return self.meta.get("attributes", {}).get("doi") if self.meta else None
+
+
+    def title(self):
+        titles = self.meta.get("attributes", {}).get("titles", []) if self.meta else []
+        return  titles[0].get("title") if titles else None
+        
+
+    def authors(self):
+        authors = self.meta.get("attributes", {}).get("creators", []) if self.meta else []
+        return [creator["name"] for creator in authors] if authors else None
+
+
+    def url(self):
+        return self.meta.get("attributes",{}).get("url") if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("attributes",{}).get("publisher") if self.meta else None
+
+
 class _ScholInfraResponse_PubMed(_ScholInfraResponse):
     
+    def __init__ (self, parent=None, meta=None, timing=None, message=None, is_publication=True):
+        super().__init__(parent, meta, timing, message)
+        self.is_publication = is_publication
+
     def pdmid(self):
         return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
 
@@ -1337,7 +1365,7 @@ class _ScholInfraResponse_PubMed(_ScholInfraResponse):
     def title(self):
         title = None
         article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
-        if article_meta.get("ArticleTitle"):
+        if article_meta and article_meta.get("ArticleTitle"):
             if type(article_meta.get("ArticleTitle")) is str:
                 title = article_meta.get("ArticleTitle")
             elif type(article_meta.get("ArticleTitle")) is dict:
@@ -1346,36 +1374,18 @@ class _ScholInfraResponse_PubMed(_ScholInfraResponse):
 
 
     def journal(self):
-        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
-        return article_meta.get("Journal", {}).get("Title")
+        if self.is_publication:
+            article_meta = self.meta.get("MedlineCitation", {}).get("Article", {}) if self.meta else {}
+            return article_meta.get("Journal", {}).get("Title")
+        else:
+            return self.meta.get("Title") if self.meta else None
 
 
     def issn(self):
-        return self.meta.get("ISOAbbreviation") if self.meta else None
-
-
-
-class _ScholInfraResponse_Datacite(_ScholInfraResponse):
-
-    def doi(self):
-        return self.meta["attributes"]["doi"]
-
-
-    def title(self):
-        return self.meta["attributes"]["titles"][0]["title"]
-
-
-    def authors(self):
-        return [creator["name"] for creator in self.meta["attributes"]["creators"]]
-
-
-    def url(self):
-        return self.meta["attributes"]["url"]
-
-
-    def journal(self):
-        return self.meta["attributes"]["publisher"]
-
+        if self.is_publication:
+            return self.meta.get("ISOAbbreviation") if self.meta else None
+        else: 
+            return self.meta.get("ISSN", {}).get("#text") if self.meta else None
 
 ######################################################################
 ## federated API access
