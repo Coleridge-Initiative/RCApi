@@ -4,8 +4,20 @@
 from richcontext import scholapi as rc_scholapi
 import pprint
 import unittest
+import warnings
 
    
+def ignore_warnings (test_func):
+    """see https://stackoverflow.com/questions/26563711/disabling-python-3-2-resourcewarning
+    """
+    def do_test (self, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            test_func(self, *args, **kwargs)
+
+    return do_test
+
+
 class TestOpenAPIs (unittest.TestCase):
 
     ######################################################################
@@ -412,11 +424,12 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(message == 'Not found')
 
 
+    @ignore_warnings
     def test_nsf_par_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
 
-        ##Please note, these numbers may change as new publications are added
+        ## please note, these numbers may change as new publications are added
         search_term = "NASA NOAA coral"
         meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
         source.report_perf(timing)
@@ -437,6 +450,7 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(len(meta) == 0)
 
 
+    @ignore_warnings
     def test_nsf_par_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
@@ -455,6 +469,7 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta is None)
 
 
+    @ignore_warnings
     def test_nsf_par_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
@@ -524,6 +539,32 @@ class TestOpenAPIs (unittest.TestCase):
         source.report_perf(timing)
         #This number may change in the future
         self.assertTrue(meta is None)   
+
+
+    def test_ssrn_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.ssrn
+
+        doi = "10.2139/ssrn.2898991"
+        expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
+
+        if source.has_credentials():
+            meta, timing, message = source.publication_lookup(doi)
+            source.report_perf(timing)
+            self.assertTrue(repr(meta) == expected)
+
+
+    def test_ssrn_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.ssrn
+
+        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
+        expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
+
+        if source.has_credentials():
+            meta, timing, message = source.title_search(title)
+            source.report_perf(timing)
+            self.assertTrue(repr(meta) == expected)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from difflib import SequenceMatcher
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options  
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
@@ -629,7 +630,7 @@ class _ScholInfra_SSRN (_ScholInfra):
         if len(meta) < 1:
             meta = None
 
-        return meta, timing, message
+        return meta
     
 
     def publication_lookup (self, identifier):
@@ -663,9 +664,12 @@ class _ScholInfra_SSRN (_ScholInfra):
 
         t0 = time.time()
         ssrn_homepage = "https://www.ssrn.com/index.cfm/en/"
-        chrome_path=self.parent.config["DEFAULT"]["chrome_exe_path"]
 
-        browser = webdriver.Chrome(executable_path=chrome_path)
+        chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]
+        chrome_options = Options()  
+        chrome_options.add_argument("--headless")  
+
+        browser = webdriver.Chrome(executable_path=chrome_path, options=chrome_options)
         browser.get(ssrn_homepage)
 
         class_name = "form-control"
@@ -681,7 +685,7 @@ class _ScholInfra_SSRN (_ScholInfra):
         url = result_element.get_attribute("href")
         browser.quit()
 
-        meta = self.url_lookup(url)
+        meta = self._lookup_url(url)
 
         if not meta or len(meta) < 1:
             meta = None
@@ -1281,7 +1285,10 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
     def _request_data (self, search_url, export_url): 
         with requests.Session() as session:
             chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]                
-            browser = webdriver.Chrome(executable_path = chrome_path)
+            chrome_options = Options()  
+            chrome_options.add_argument("--headless")  
+
+            browser = webdriver.Chrome(executable_path=chrome_path, options=chrome_options)
             browser.get(search_url)        
 
             request_cookies_browser = browser.get_cookies()
@@ -1291,7 +1298,9 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
             reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8"))) 
             json_data = json.dumps(list(reader))
             json_data = json.loads(json_data)  
+
             browser.quit()      
+            session.close()
 
         return json_data
 
