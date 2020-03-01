@@ -37,7 +37,8 @@ if __name__ == "__main__":
     # run it...
     if source.has_credentials():
         #meta, timing, message = source.title_search(title)
-        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
+        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=False)
+        print(meta)
 
     # report results
     if message:
