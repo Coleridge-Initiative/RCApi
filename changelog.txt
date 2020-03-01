@@ -2,10 +2,16 @@
 
 ## 1.1.2
 
-2020-02-??
+2020-0?-??
+
+  - support for codecov.io
+
+  - headless mode for Selenium use
 
   - added integration of NSF-PAR
+
   - added integration of ORCID API
+
   - added integration of CORE API
 
 

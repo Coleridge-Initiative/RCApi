@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from collections import OrderedDict
 from difflib import SequenceMatcher
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options  
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
@@ -127,8 +128,8 @@ class _ScholInfra:
         :param exact_match: Some APIs allow a flag to turn off exact matches.
         :type limit: bool.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: list (_ScholInfraResponse(meta, timing, message))
+            - meta - publication JSON text from search results.
             - timing - elasped system time in seconds.
             - message - an optional error message.
         """
@@ -149,8 +150,8 @@ class _ScholInfra:
         :param title: Query term to locate a specific publications.
         :type title: str.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: _ScholInfraResponse(meta, timing, message)
+            - meta - publication JSON text from search results.
             - timing - elasped system time in milliseconds.
             - message - an optional error message.
         """
@@ -173,8 +174,8 @@ class _ScholInfra:
         :param identifier: DOI used to locate a specific publications.
         :type identifier: str.
 
-        :returns: tuple (meta, timing, message)
-            - meta - JSON list of search results.
+        :returns: _ScholInfraResponse(self, meta, timing, message))
+            - meta - publication JSON text from search results.
             - timing - elasped system time in milliseconds.
             - message - an optional error message.
         """
@@ -629,7 +630,7 @@ class _ScholInfra_SSRN (_ScholInfra):
         if len(meta) < 1:
             meta = None
 
-        return meta, timing, message
+        return meta
     
 
     def publication_lookup (self, identifier):
@@ -663,9 +664,12 @@ class _ScholInfra_SSRN (_ScholInfra):
 
         t0 = time.time()
         ssrn_homepage = "https://www.ssrn.com/index.cfm/en/"
-        chrome_path=self.parent.config["DEFAULT"]["chrome_exe_path"]
 
-        browser = webdriver.Chrome(executable_path=chrome_path)
+        chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]
+        chrome_options = Options()  
+        chrome_options.add_argument("--headless")  
+
+        browser = webdriver.Chrome(executable_path=chrome_path, options=chrome_options)
         browser.get(ssrn_homepage)
 
         class_name = "form-control"
@@ -681,7 +685,7 @@ class _ScholInfra_SSRN (_ScholInfra):
         url = result_element.get_attribute("href")
         browser.quit()
 
-        meta = self.url_lookup(url)
+        meta = self._lookup_url(url)
 
         if not meta or len(meta) < 1:
             meta = None
@@ -803,7 +807,7 @@ class _ScholInfra_PubMed (_ScholInfra):
                     meta = parsed
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_PubMed(self, meta, timing, message)
 
 
     def _full_text_get_ids (self, search_term, limit=None):
@@ -921,7 +925,7 @@ class _ScholInfra_PubMed (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_PubMed(self, meta, timing, message, False)
 
 
 class _ScholInfra_DataCite (_ScholInfra): 
@@ -953,7 +957,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Datacite(self, meta, timing, message)
 
     
     def title_search (self, title):
@@ -1000,7 +1004,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Datacite(self, meta, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -1019,7 +1023,7 @@ class _ScholInfra_DataCite (_ScholInfra):
 
         if limit:
             url = url + "&page[size]={}".format(limit)
-        
+
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -1030,7 +1034,7 @@ class _ScholInfra_DataCite (_ScholInfra):
             message = response.text
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_Datacite(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Datacite(self, meta, timing, message)]
 
 
 class _ScholInfra_CORE (_ScholInfra): 
@@ -1281,7 +1285,10 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
     def _request_data (self, search_url, export_url): 
         with requests.Session() as session:
             chrome_path = self.parent.config["DEFAULT"]["chrome_exe_path"]                
-            browser = webdriver.Chrome(executable_path = chrome_path)
+            chrome_options = Options()  
+            chrome_options.add_argument("--headless")  
+
+            browser = webdriver.Chrome(executable_path=chrome_path, options=chrome_options)
             browser.get(search_url)        
 
             request_cookies_browser = browser.get_cookies()
@@ -1291,7 +1298,9 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
             reader = csv.DictReader(io.StringIO(resp.content.decode("utf-8"))) 
             json_data = json.dumps(list(reader))
             json_data = json.loads(json_data)  
+
             browser.quit()      
+            session.close()
 
         return json_data
 
@@ -1394,12 +1403,110 @@ class _ScholInfraResponse:
     manage the response from a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self, parent=None, meta=None, timing=0, message=None):
+    def __init__ (self, parent=None, meta=None, timing=None, message=None):
         self.parent = parent
         self.meta = meta
         self.timing = timing
         self.message = message
 
+
+    def doi(self):
+        return None
+
+
+    def title(self):
+        return None
+
+
+    def authors(self):
+        return None
+
+
+    def url(self):
+        return None
+
+
+    def journal(self):
+        return None
+
+
+    def serialize(self):
+        return self.meta
+
+
+class _ScholInfraResponse_Datacite(_ScholInfraResponse):
+
+    def doi(self):
+        return self.meta.get("attributes", {}).get("doi") if self.meta else None
+
+
+    def title(self):
+        titles = self.meta.get("attributes", {}).get("titles", []) if self.meta else []
+        return  titles[0].get("title") if titles else None
+        
+
+    def authors(self):
+        authors = self.meta.get("attributes", {}).get("creators", []) if self.meta else []
+        return [creator["name"] for creator in authors] if authors else None
+
+
+    def url(self):
+        return self.meta.get("attributes",{}).get("url") if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("attributes",{}).get("publisher") if self.meta else None
+
+
+class _ScholInfraResponse_PubMed(_ScholInfraResponse):
+    
+    def __init__ (self, parent=None, meta=None, timing=None, message=None, is_publication=True):
+        super().__init__(parent, meta, timing, message)
+        self.is_publication = is_publication
+
+    def pdmid(self):
+        return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
+
+
+    def doi(self):
+        try:
+            pid_list = self.meta.get("MedlineCitation", {}).get("Article", {}).get("ELocationID")
+            if isinstance(pid_list,list):
+                dois = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                if len(dois) > 0:
+                    return dois[0]
+
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                   return pid_list["#text"]
+        except:
+            return None
+
+
+    def title(self):
+        title = None
+        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
+        if article_meta and article_meta.get("ArticleTitle"):
+            if type(article_meta.get("ArticleTitle")) is str:
+                title = article_meta.get("ArticleTitle")
+            elif type(article_meta.get("ArticleTitle")) is dict:
+                title = article_meta.get("ArticleTitle", {}).get("#text")
+        return title
+
+
+    def journal(self):
+        if self.is_publication:
+            article_meta = self.meta.get("MedlineCitation", {}).get("Article", {}) if self.meta else {}
+            return article_meta.get("Journal", {}).get("Title")
+        else:
+            return self.meta.get("Title") if self.meta else None
+
+
+    def issn(self):
+        if self.is_publication:
+            return self.meta.get("ISOAbbreviation") if self.meta else None
+        else: 
+            return self.meta.get("ISSN", {}).get("#text") if self.meta else None
 
 ######################################################################
 ## federated API access

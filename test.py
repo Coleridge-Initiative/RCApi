@@ -4,8 +4,20 @@
 from richcontext import scholapi as rc_scholapi
 import pprint
 import unittest
+import warnings
 
    
+def ignore_warnings (test_func):
+    """see https://stackoverflow.com/questions/26563711/disabling-python-3-2-resourcewarning
+    """
+    def do_test (self, *args, **kwargs):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            test_func(self, *args, **kwargs)
+
+    return do_test
+
+
 class TestOpenAPIs (unittest.TestCase):
 
     ######################################################################
@@ -28,13 +40,18 @@ class TestOpenAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.pubmed
 
-        title = "Climate-change-driven accelerated sea-level rise detected in the altimeter era"
+        title = "Climate-change-driven accelerated sea-level rise detected in the altimeter era."
         expected = "29440401"
+        doi = "10.1073/pnas.1717312115"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta["MedlineCitation"]["PMID"]["#text"] == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.pdmid() == expected)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.journal() == "Proceedings of the National Academy of Sciences of the United States of America")
+            self.assertTrue(response.issn() is None)
 
 
     def test_pubmed_journal_lookup (self):
@@ -42,12 +59,16 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.pubmed
 
         issn = "1932-6203"
-        expected = "PLoS ONE"
+        expected = "PLoS ONE".lower()
 
         if source.has_credentials():
-            meta, timing, message = source.journal_lookup(issn)
-            source.report_perf(timing)
-            self.assertTrue(meta["ISOAbbreviation"] == expected)
+            response = source.journal_lookup(issn)
+            source.report_perf(response.timing)
+            self.assertTrue(response.pdmid() == None)
+            self.assertTrue(response.doi() == None)
+            self.assertTrue(response.title() == None)
+            self.assertTrue(response.journal().lower() == expected)
+            self.assertTrue(response.issn() == issn)
 
 
     ######################################################################
@@ -98,20 +119,30 @@ class TestOpenAPIs (unittest.TestCase):
 
         doi = "10.22002/d1.246"
         title = "In Situ Carbon Dioxide and Methane Mole Fractions from the Los Angeles Megacity Carbon Project"
+        url = "https://data.caltech.edu/records/246"
+        journal = "CaltechDATA"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["attributes"]["doi"] == doi)
-            self.assertTrue(meta["attributes"]["titles"][0]["title"] == title)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.authors() == ["Verhulst, Kristal"])
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.journal() == journal)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
-            self.assertTrue("404" in message)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.serialize() == None)
+            self.assertTrue("404" in response.message)
+            self.assertTrue(response.doi() is None)
+            self.assertTrue(response.title() is None)
+            self.assertTrue(response.authors() is None)
+            self.assertTrue(response.url() is None)
+            self.assertTrue(response.journal() is None)
 
 
     def test_datacite_title_search (self):
@@ -120,18 +151,26 @@ class TestOpenAPIs (unittest.TestCase):
 
         title = "Empirical analysis of potential improvements for high voltage protective algorithms"
         expected = "10.5281/zenodo.3635395"
+        journal = "Zenodo"
+        author = "López, David"
+        url = "https://zenodo.org/record/3635395"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            self.assertTrue(meta and meta["id"] == expected)
+            response = source.title_search(title)
+            self.assertTrue(response.meta and response.meta["id"] == expected)
+            self.assertTrue(response.doi() == expected)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(author in response.authors())
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.journal() == journal)
 
         # error case
         title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta == None)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta == None)
 
 
     def test_datacite_fulltext_search (self):
@@ -142,9 +181,9 @@ class TestOpenAPIs (unittest.TestCase):
         expected = 5
 
         if source.has_credentials():
-            meta, timing, message = source.full_text_search(search_term, limit=expected, exact_match=True)
-            source.report_perf(timing)
-            self.assertTrue(len(meta) == expected)
+            responses = source.full_text_search(search_term, limit=expected, exact_match=True)
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) == expected)
 
 
     def test_datacite__format_exact_quote (self):
@@ -385,11 +424,12 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(message == 'Not found')
 
 
+    @ignore_warnings
     def test_nsf_par_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
 
-        ##Please note, these numbers may change as new publications are added
+        ## please note, these numbers may change as new publications are added
         search_term = "NASA NOAA coral"
         meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
         source.report_perf(timing)
@@ -410,6 +450,7 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(len(meta) == 0)
 
 
+    @ignore_warnings
     def test_nsf_par_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
@@ -428,6 +469,7 @@ class TestOpenAPIs (unittest.TestCase):
         self.assertTrue(meta is None)
 
 
+    @ignore_warnings
     def test_nsf_par_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.nsfPar
@@ -497,6 +539,32 @@ class TestOpenAPIs (unittest.TestCase):
         source.report_perf(timing)
         #This number may change in the future
         self.assertTrue(meta is None)   
+
+
+    def test_ssrn_publication_lookup (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.ssrn
+
+        doi = "10.2139/ssrn.2898991"
+        expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
+
+        if source.has_credentials():
+            meta, timing, message = source.publication_lookup(doi)
+            source.report_perf(timing)
+            self.assertTrue(repr(meta) == expected)
+
+
+    def test_ssrn_title_search (self):
+        schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
+        source = schol.ssrn
+
+        title = "Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit"
+        expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
+
+        if source.has_credentials():
+            meta, timing, message = source.title_search(title)
+            source.report_perf(timing)
+            self.assertTrue(repr(meta) == expected)
 
 
 if __name__ == "__main__":

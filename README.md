@@ -64,11 +64,12 @@ Parameters used in the configuration file include:
 | `orcid_secret` | ORCID API key |
 | `repec_token` | RePEc API token |
 
-Download the [Chrome webdriver](https://chromedriver.chromium.org/downloads) 
-to enable use of Selenium (SSRN only).
+Download the [`ChromeDriver`](https://chromedriver.chromium.org/downloads) 
+webdriver for the `Chrome` brower to enable use of Selenium. 
+This will be run in a "headless" mode.
 
-For a good (although slightly dated) tutorial for installing and
-testing Selenium on Ubuntu Linux, see:
+For a good (though slightly dated) tutorial for installing and testing
+Selenium on Ubuntu Linux, see:
 <https://christopher.su/2015/selenium-chromedriver-ubuntu/>
 
 
@@ -103,11 +104,24 @@ if source.has_credentials():
 First, be sure that you're testing the source and not from an
 installed library.
 
-Then run unit tests on the APIs for which you have credentials:
+Then run unit tests on the APIs for which you have credentials and
+generate a coverage report:
 
 ```
-python test.py
+coverage run -m unittest discover
 ```
+
+Then create GitHub issues among the submodules for any failed tests.
+
+Also, you can generate a coverage report and upload that via:
+
+```
+coverage report
+bash <(curl -s https://codecov.io/bash) -t @.cc_token
+```
+
+Test coverage reports can be viewed at
+<https://codecov.io/gh/Coleridge-Initiative/RCApi>
 
 
 ## API Integrations
@@ -138,6 +152,23 @@ APIs used to retrieve metadata:
 
 See the coding examples in the `test.py` unit test for usage patterns
 per supported API.
+
+
+## Troubleshooting
+
+  * `ChromeDriver`
+
+If you encounter an exception about the `ChromeDriver` version, for
+example:
+
+```
+selenium.common.exceptions.SessionNotCreatedException: Message: session not created:
+  This version of ChromeDriver only supports Chrome version 78
+```
+
+Then check your instance of the *Chrome* browser to find its release
+number, then go to <https://chromedriver.chromium.org/downloads> to
+download the corresponding required version of `ChromeDriver`.
 
 
 ## Literature
