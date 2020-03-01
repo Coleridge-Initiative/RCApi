@@ -4,6 +4,8 @@
 
 2020-0?-??
 
+  - support for codecov.io
+
   - headless mode for Selenium use
 
   - added integration of NSF-PAR
