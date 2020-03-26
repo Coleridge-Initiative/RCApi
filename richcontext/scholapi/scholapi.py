@@ -318,7 +318,8 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
 
                 timing = self._mark_elapsed_time(t0)
                 return meta, timing, message
-
+        
+        timing = self._mark_elapsed_time(t0)
         return None, timing, message
 
 
@@ -488,7 +489,8 @@ class _ScholInfra_Dimensions (_ScholInfra):
                     if len(meta) > 0:
                         timing = self._mark_elapsed_time(t0)
                         return meta, timing, message
-
+        
+        timing = self._mark_elapsed_time(t0)
         return None, timing, message
 
 
@@ -584,6 +586,7 @@ class _ScholInfra_RePEc (_ScholInfra):
             t0 = time.time()
             token = self.parent.config["DEFAULT"]["repec_token"]
             url = self._get_api_url(token, handle)
+            # TODO: Check if meta == [{'error': 2}]
             meta = json.loads(requests.get(url).text)
 
             if not meta or len(meta) < 1:
@@ -681,6 +684,7 @@ class _ScholInfra_SSRN (_ScholInfra):
         search_url = browser.current_url
         search_url_result = browser.get(search_url)
 
+        # TODO: Fix Exception thrown when element not found
         result_element = browser.find_element_by_xpath("//*[@class='title optClickTitle']")
         url = result_element.get_attribute("href")
         browser.quit()
@@ -729,11 +733,13 @@ class _ScholInfra_Crossref (_ScholInfra):
         response = requests.get(url).text
         json_response = json.loads(response)
 
-        parsed = json_response["message"]["items"][0]
-        result_title = parsed["title"][0]
+        items = json_response["message"]["items"]
+        first_item = items[0] if len(items) > 0 else {}
+        titles = first_item.get("title", [])
+        result_title = titles[0] if len(titles) > 0 else None
 
         if self.title_match(title, result_title):
-            meta = parsed
+            meta = first_item
 
             if self.parent.logger:
                 self.parent.logger.debug(meta)
@@ -789,22 +795,24 @@ class _ScholInfra_PubMed (_ScholInfra):
                 retmode = "xml"
                 ))
         
-        search_id = handle["IdList"][0]
-        
-        fetch_result = Entrez.efetch(db="pubmed", id=search_id, retmode="xml")
-        data = fetch_result.read()
-        fetch_result.close()
+        id_list = handle.get("IdList", [])
+        search_id = id_list[0] if len(id_list) > 0 else None
 
-        xml = xmltodict.parse(data)
-        parsed = json.loads(json.dumps(xml))
+        if search_id:
+            fetch_result = Entrez.efetch(db="pubmed", id=search_id, retmode="xml")
+            data = fetch_result.read()
+            fetch_result.close()
 
-        if "PubmedArticle" in parsed["PubmedArticleSet"]:
-            parsed = parsed["PubmedArticleSet"]["PubmedArticle"]
-            result_title = parsed["MedlineCitation"]["Article"]["ArticleTitle"]
+            xml = xmltodict.parse(data)
+            parsed = json.loads(json.dumps(xml))
 
-            if self.title_match(title, result_title):
-                if parsed and len(parsed) > 0:
-                    meta = parsed
+            if "PubmedArticle" in parsed["PubmedArticleSet"]:
+                parsed = parsed["PubmedArticleSet"]["PubmedArticle"]
+                result_title = parsed["MedlineCitation"]["Article"]["ArticleTitle"]
+
+                if self.title_match(title, result_title):
+                    if parsed and len(parsed) > 0:
+                        meta = parsed
 
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_PubMed(self, meta, timing, message)
