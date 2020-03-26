@@ -586,12 +586,12 @@ class _ScholInfra_RePEc (_ScholInfra):
             t0 = time.time()
             token = self.parent.config["DEFAULT"]["repec_token"]
             url = self._get_api_url(token, handle)
-            # TODO: Check if meta == [{'error': 2}]
             meta = json.loads(requests.get(url).text)
 
             if not meta or len(meta) < 1:
                 meta = None
-
+            if meta == [{'error': 2}]:
+                raise Exception('Issue when fetching metadata: ', meta)
         except:
             print(traceback.format_exc())
             meta = None
