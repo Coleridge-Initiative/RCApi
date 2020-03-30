@@ -269,7 +269,7 @@ class TestOpenAPIs (unittest.TestCase):
             source.report_perf(timing)
 
             for pub in meta:
-                if pub["doi"] == "10.1016/j.foodchem.2019.125340":
+                if pub["doi"] == "10.1016/j.foodchem.2019.126123":
                     self.assertTrue(pub["journal"]["title"] == expected)
                     return
 
