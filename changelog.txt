@@ -4,6 +4,8 @@
 
 2020-0?-??
 
+  - `title_search()` for REPEC, Crossref, Pubmed fails more gracefully
+
   - support for codecov.io
 
   - headless mode for Selenium use
