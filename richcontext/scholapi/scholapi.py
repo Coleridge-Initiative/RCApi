@@ -1110,7 +1110,10 @@ class _ScholInfra_CORE (_ScholInfra):
                 json_response = json.loads(response.text)
 
                 if (json_response["status"] == "OK"):
-                    meta = json_response["data"][0]
+                    for entry in  json_response["data"]:
+                        if entry["title"].lower() == title.lower():
+                            meta = entry
+                            break
                 else:
                     meta = None
                     message = json_response["status"]
