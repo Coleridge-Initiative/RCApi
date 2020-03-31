@@ -78,11 +78,14 @@ class _ScholInfra:
 
 
     @classmethod
-    def _get_xml_node_value (cls, root, name):
+    def _get_xml_node_value (cls, root, *name):
         """
         return the named value from an XML node, if it exists
         """
-        node = root.find(name)
+        if len(name) == 1:
+            node = root.find(name[0])
+        elif len(name) == 2:
+            node = root.find(name[0], name[1])
 
         if not node:
             return None
@@ -282,7 +285,7 @@ class _ScholInfra_EuropePMC (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_EuropePMC(self, meta, timing, message)
 
 
 class _ScholInfra_OpenAIRE (_ScholInfra):
@@ -312,14 +315,16 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
             result_title = self._get_xml_node_value(result, "title")
 
             if self.title_match(title, result_title):
+                meta["doi"] = self._get_xml_node_value(result, "pid", {"classname": "doi"})
+                meta["title"] = self._get_xml_node_value(result, "title")
                 meta["url"] = self._get_xml_node_value(result, "url")
                 meta["authors"] = [a.text for a in result.find_all("creator")]
                 meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
                 timing = self._mark_elapsed_time(t0)
-                return meta, timing, message
+                return _ScholInfraResponse_OpenAIRE(self, meta, timing, message)
 
-        return None, timing, message
+        return _ScholInfraResponse_OpenAIRE(self, None, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -346,7 +351,7 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
         meta = soup.find_all("oaf:result")
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_OpenAIRE(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_OpenAIRE(self, meta, timing, message)]
     
 
 class _ScholInfra_SemanticScholar (_ScholInfra):
@@ -370,7 +375,7 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
             meta = None
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_SemanticScholar(self, meta, timing, message)
 
 
 class _ScholInfra_Unpaywall (_ScholInfra):
@@ -487,9 +492,9 @@ class _ScholInfra_Dimensions (_ScholInfra):
 
                     if len(meta) > 0:
                         timing = self._mark_elapsed_time(t0)
-                        return meta, timing, message
+                        return _ScholInfraResponse_Dimensions(self, meta, timing, message)
 
-        return None, timing, message
+        return _ScholInfraResponse_Dimensions(self, None, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=True):
@@ -519,8 +524,8 @@ class _ScholInfra_Dimensions (_ScholInfra):
         meta = response.publications
         
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
-        
+        return [_ScholInfraResponse_Dimensions(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Dimensions(self, meta, timing, message)]
+
 
 class _ScholInfra_RePEc (_ScholInfra):
     """
@@ -1431,6 +1436,82 @@ class _ScholInfraResponse:
 
     def serialize(self):
         return self.meta
+
+
+class _ScholInfraResponse_EuropePMC(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta["journal"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+class _ScholInfraResponse_OpenAIRE(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["url"] if self.meta else None
+
+
+class _ScholInfraResponse_Dimensions(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["linkout"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("journal", {}).get("title")
+
+
+class _ScholInfraResponse_SemanticScholar(_ScholInfraResponse):
+
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["url"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta["venue"] if self.meta else None
 
 
 class _ScholInfraResponse_SSRN(_ScholInfraResponse):
