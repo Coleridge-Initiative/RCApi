@@ -31,9 +31,12 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "OrderedDict([('doi', '10.1016/j.pnpbp.2019.109770'), ('journal', 'Prog Neuropsychopharmacol Biol Psychiatry'), ('authors', ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])])"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(repr(meta) == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(repr(response.meta) == expected)
+            self.assertTrue(response.doi() == '10.1016/j.pnpbp.2019.109770')
+            self.assertTrue(response.journal() == 'Prog Neuropsychopharmacol Biol Psychiatry')
+            self.assertTrue(response.authors() == ['Nabinger DD', 'Altenhofen S', 'Bonan CD.'])
 
 
     def test_pubmed_title_search (self):
@@ -82,6 +85,10 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(response.journal().lower() == expected)
             self.assertTrue(response.issn() == issn)
 
+    
+    def test_pubmed_full_text_search (self):
+        #TODO
+        pass
 
     ######################################################################
     ## Scholix family of APIs
@@ -92,11 +99,18 @@ class TestOpenAPIs (unittest.TestCase):
 
         doi = "10.1503/cmaj.170880"
         expected = "Relation between household food insecurity and breastfeeding in Canada"
+        num_authors = 4
+        url = "http://dx.doi.org/10.1503/cmaj.170880"
+        journal = "Canadian Medical Association Journal"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["title"][0] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.title() == expected)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(len(response.authors()) == num_authors)
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.journal() == journal)
 
 
     def test_crossref_title_search (self):
@@ -107,15 +121,15 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "10.1503/cmaj.170880"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta["DOI"] == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == expected)
         
         title = "D"
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta is None)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta is None)
 
 
     def test_crossref_fulltext_search (self):
@@ -126,9 +140,9 @@ class TestOpenAPIs (unittest.TestCase):
         expected = 100
 
         if source.has_credentials():
-            meta, timing, message = source.full_text_search(search_term, limit=expected)
-            source.report_perf(timing)
-            self.assertTrue(meta["total-results"] >= expected)
+            responses = source.full_text_search(search_term, limit=expected)
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) >= expected)
 
 
     def test_datacite_publication_lookup (self):
@@ -219,13 +233,19 @@ class TestOpenAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.openaire
 
-        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
-        expected = "OrderedDict([('url', 'https://europepmc.org/articles/PMC5574185/'), ('authors', ['Taillie, Lindsey Smith', 'Ng, Shu Wen', 'Xue, Ya', 'Harding, Matthew']), ('open', True)])"
+        doi = "10.1016/j.appet.2017.07.006"
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases"
+        url = "https://europepmc.org/articles/PMC5574185/"
+        authors = ["Taillie, Lindsey Smith", "Ng, Shu Wen", "Xue, Ya", "Harding, Matthew"]
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(repr(meta) == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.authors() == authors)
+            self.assertTrue(response.meta["open"])
 
     
     def test_openaire_fulltext_search (self):
@@ -236,9 +256,9 @@ class TestOpenAPIs (unittest.TestCase):
         expected = 100
 
         if source.has_credentials():
-            meta, timing, message = source.full_text_search(search_term, limit=expected)
-            source.report_perf(timing)
-            self.assertTrue(len(meta) >= expected)
+            responses = source.full_text_search(search_term, limit=expected)
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) >= expected)
 
 
     ######################################################################
@@ -248,13 +268,18 @@ class TestOpenAPIs (unittest.TestCase):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.dimensions
 
-        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases."
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases"
         expected = "10.1016/j.appet.2017.07.006"
+        url = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5574185"
+        journal = "Appetite"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta["doi"] == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == expected)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.journal() == journal)
 
 
     def test_dimensions_full_text_search (self):
@@ -265,12 +290,12 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "Food Chemistry"
 
         if source.has_credentials():
-            meta, timing, message = source.full_text_search(search_term, limit=20, exact_match=True)
-            source.report_perf(timing)
+            responses = source.full_text_search(search_term, limit=20, exact_match=True)
+            source.report_perf(responses[0].timing)
 
-            for pub in meta:
-                if pub["doi"] == "10.1016/j.foodchem.2019.126123":
-                    self.assertTrue(pub["journal"]["title"] == expected)
+            for response in responses:
+                if response.doi() == "10.1016/j.foodchem.2019.126123":
+                    self.assertTrue(response.journal() == expected)
                     return
 
             self.assertTrue("DOI not found" == "")
@@ -287,16 +312,16 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "https://doi.org/10.1016/j.appet.2017.07.006"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["doi_url"] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta["doi_url"] == expected)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
 
 
     def test_dissemin_publication_lookup (self):
@@ -307,16 +332,16 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "2017-10-01"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["paper"]["date"] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta["paper"]["date"] == expected)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
 
 
     def test_semantic_publication_lookup (self):
@@ -327,16 +352,17 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "https://www.semanticscholar.org/paper/690195fe2ab0fa093204a050ceb2f9fd1d1b2907"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["url"] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.url() == expected)
+            self.assertTrue(response.doi() == doi)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
 
 
     ######################################################################
@@ -362,19 +388,32 @@ class TestOpenAPIs (unittest.TestCase):
         doi = "10.1371/journal.pone.0013969"
         title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
 
+        # NB: there may be multiple "correct" responses for the
+        # following -- this test case has some instability
+        urls = ["https://core.ac.uk/download/pdf/143863779.pdf", "https://core.ac.uk/download/pdf/51094169.pdf"]
+        journals = ["Public Library of Science", "NSUWorks"]
+
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["doi"] == doi)
-            self.assertTrue(meta["title"].lower() == title)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title().lower() == title)
+            self.assertTrue(response.url() in urls)
+            self.assertTrue(response.journal() in journals)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
-            self.assertTrue("Not found" == message)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
+            self.assertTrue(response.doi() == None)
+            self.assertTrue(response.title() == None)
+            self.assertTrue(response.url() == None)
+            self.assertTrue(response.authors() == None)
+            self.assertTrue(response.journal() == None)
+            self.assertTrue("Not found" == response.message)
 
 
     def test_core_title_search (self):
@@ -383,20 +422,27 @@ class TestOpenAPIs (unittest.TestCase):
 
         doi = "10.1371/journal.pone.0013969"
         title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
+        url = "https://core.ac.uk/download/pdf/51094169.pdf"
+        author = "Eakin, C. Mark"
+        journal = "NSUWorks"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta and meta["doi"] == doi)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title().lower() == title)
+            self.assertTrue(response.url() == url)
+            self.assertTrue(author in response.authors())
+            self.assertTrue(response.journal() == journal)
 
         # error case
         title = "ajso58tt849qp3g84h38pghq3974ut8gq9j9ht789" # Should be no matches
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(meta == None)
-            self.assertTrue(message == "Not found")
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == "Not found")
 
 
     def test_core_fulltext_search (self):
@@ -407,17 +453,17 @@ class TestOpenAPIs (unittest.TestCase):
         
         if source.has_credentials():
             # CORE limit value range: 10-100 
-            meta, timing, message = source.full_text_search(search_term, limit=13)
-            source.report_perf(timing)
-            self.assertTrue(len(meta) == 13)
+            responses = source.full_text_search(search_term, limit=13)
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) == 13)
 
-            meta, timing, message = source.full_text_search(search_term, limit=2)  
-            source.report_perf(timing)
-            self.assertTrue(len(meta) == 10)
+            responses = source.full_text_search(search_term, limit=2)  
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) == 10)
 
-            meta, timing, message = source.full_text_search(search_term, limit=101)  
-            source.report_perf(timing)
-            self.assertTrue(len(meta) == 10)
+            responses = source.full_text_search(search_term, limit=101)  
+            source.report_perf(responses[0].timing)
+            self.assertTrue(len(responses) == 10)
 
 
     def test_core_journal_lookup (self):
@@ -428,18 +474,18 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "PLoS ONE"
 
         if source.has_credentials():
-            meta, timing, message = source.journal_lookup(issn)
-            source.report_perf(timing)
-            self.assertTrue(meta["title"] == expected)
+            response = source.journal_lookup(issn)
+            source.report_perf(response.timing)
+            self.assertTrue(response.title() == expected)
 
         # error case
         issn = "0000-0000"
 
         if source.has_credentials():
-            meta, timing, message = source.journal_lookup(issn)
-            source.report_perf(timing)
-            self.assertTrue(meta == None)
-            self.assertTrue(message == 'Not found')
+            response = source.journal_lookup(issn)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == 'Not found')
 
 
     @ignore_warnings
@@ -449,23 +495,24 @@ class TestOpenAPIs (unittest.TestCase):
 
         ## please note, these numbers may change as new publications are added
         search_term = "NASA NOAA coral"
-        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=True)
-        source.report_perf(timing)
-        self.assertTrue(len(meta) == 13)
+        responses = source.full_text_search(search_term, limit=13, exact_match=True)
+        source.report_perf(responses[0].timing)
+        self.assertTrue(len(responses) == 13)
 
-        meta, timing, message = source.full_text_search(search_term, limit=-1, exact_match=True)
-        source.report_perf(timing)
-        self.assertTrue(len(meta) == 15)
+        responses = source.full_text_search(search_term, limit=-1, exact_match=True)
+        source.report_perf(responses[0].timing)
+        self.assertTrue(len(responses) == 15)
 
-        meta, timing, message = source.full_text_search(search_term, limit=1000, exact_match=True)
-        source.report_perf(timing)
-        self.assertTrue(len(meta) == 15)
+        responses = source.full_text_search(search_term, limit=1000, exact_match=True)
+        source.report_perf(responses[0].timing)
+        self.assertTrue(len(responses) == 15)
 
         #Won't find any
         search_term = "dlkadngeonr3q0984gqn839g"
-        meta, timing, message = source.full_text_search(search_term, limit=13)
-        source.report_perf(timing)
-        self.assertTrue(len(meta) == 0)
+        responses = source.full_text_search(search_term, limit=13)
+        source.report_perf(responses[0].timing)
+        self.assertTrue(len(responses) == 1)
+        self.assertTrue(responses[0].meta is None)
 
 
     @ignore_warnings
@@ -476,15 +523,15 @@ class TestOpenAPIs (unittest.TestCase):
         ##Please note, these numbers may change as new publications are added
         title = "Essential ocean variables for global sustained observations of biodiversity and ecosystem changes"
         doi = "10.1111/gcb.14108"
-        meta, timing, message = source.title_search(title)
-        source.report_perf(timing)
-        self.assertTrue(meta["DOI"] == doi)
+        response = source.title_search(title)
+        source.report_perf(response.timing)
+        self.assertTrue(response.doi() == doi)
 
         #Won't find any
         title = "dlkadngeonr3q0984gqn839g"
-        meta, timing, message = source.title_search(title)
-        source.report_perf(timing)
-        self.assertTrue(meta is None)
+        response = source.title_search(title)
+        source.report_perf(response.timing)
+        self.assertTrue(response.meta is None)
 
 
     @ignore_warnings
@@ -495,17 +542,17 @@ class TestOpenAPIs (unittest.TestCase):
         ##Please note, these numbers may change as new publications are added
         title = "Essential ocean variables for global sustained observations of biodiversity and ecosystem changes"
         doi = "10.1111/gcb.14108"
-        meta, timing, message = source.publication_lookup(doi)
+        response = source.publication_lookup(doi)
         
-        source.report_perf(timing)
-        self.assertTrue(meta["DOI"] == doi)
-        self.assertTrue(meta["TITLE"] == title)
+        source.report_perf(response.timing)
+        self.assertTrue(response.doi() == doi)
+        self.assertTrue(response.title() == title)
 
         #Error case
         doi = "10.00000/xxx"
-        meta, timing, message = source.publication_lookup(title)
-        source.report_perf(timing)
-        self.assertTrue(meta is None)
+        response = source.publication_lookup(title)
+        source.report_perf(response.timing)
+        self.assertTrue(response.meta is None)
     
     
     def test_orcid_publication_lookup (self):
@@ -513,16 +560,16 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.orcid
 
         orcid = "0000-0002-8139-2960" #Julia Lane
-        meta, timing, message = source.publication_lookup(orcid)
-        source.report_perf(timing)
+        response = source.publication_lookup(orcid)
+        source.report_perf(response[0].timing)
         #This number may change in the future
-        self.assertTrue(len(meta) == 137)
+        self.assertTrue(len(response) == 137)
 
         orcid = "0000-0002-0735-6312"
-        meta, timing, message = source.publication_lookup(orcid)
-        source.report_perf(timing)
+        response = source.publication_lookup(orcid)
+        source.report_perf(response[0].timing)
         #This number may change in the future
-        self.assertTrue(meta is None)
+        self.assertTrue(response[0].meta is None)
 
 
     def test_orcid_affiliations (self):
@@ -530,16 +577,16 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.orcid
 
         orcid = "0000-0002-8139-2960" #Julia Lane
-        meta, timing, message = source.affiliations(orcid)
-        source.report_perf(timing)
+        response = source.affiliations(orcid)
+        source.report_perf(response.timing)
         #This number may change in the future
-        self.assertTrue(len(meta) == 3)
+        self.assertTrue(len(response.meta) == 3)
 
         orcid = "0000-0002-0735-6312"
-        meta, timing, message = source.affiliations(orcid)
-        source.report_perf(timing)
+        response = source.affiliations(orcid)
+        source.report_perf(response.timing)
         #This number may change in the future
-        self.assertTrue(meta is None)
+        self.assertTrue(response.meta is None)
 
 
     def test_orcid_funding (self):
@@ -547,16 +594,16 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.orcid
 
         orcid = "0000-0002-8139-2960" #Julia Lane
-        meta, timing, message = source.funding(orcid)
-        source.report_perf(timing)
+        response = source.funding(orcid)
+        source.report_perf(response.timing)
         #This number may change in the future
-        self.assertTrue(len(meta) == 17)
+        self.assertTrue(len(response.meta) == 17)
 
         orcid = "0000-0002-0735-6312"
-        meta, timing, message = source.funding(orcid)
-        source.report_perf(timing)
+        response = source.funding(orcid)
+        source.report_perf(response.timing)
         #This number may change in the future
-        self.assertTrue(meta is None)   
+        self.assertTrue(response.meta is None)   
 
 
     def test_ssrn_publication_lookup (self):
@@ -564,12 +611,15 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.ssrn
 
         doi = "10.2139/ssrn.2898991"
+        authors = ['Freedman, Matthew', 'Kuhns, Annemarie']
         expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(repr(meta) == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(repr(response.meta) == expected)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(all(author in authors for author in response.authors()))
 
 
     def test_ssrn_title_search (self):
@@ -580,9 +630,10 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "OrderedDict([('doi', '10.2139/ssrn.2898991'), ('title', 'Supply-Side Subsidies to Improve Food Access and Dietary Outcomes: Evidence from the New Markets Tax Credit'), ('keywords', ['place-based policies', 'retail food', 'tax incentives', 'community health', 'regression discontinuity']), ('authors', ['Freedman, Matthew', 'Kuhns, Annemarie'])])"
 
         if source.has_credentials():
-            meta, timing, message = source.title_search(title)
-            source.report_perf(timing)
-            self.assertTrue(repr(meta) == expected)
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(repr(response.meta) == expected)
+            self.assertTrue(response.title() == title)
 
 
 if __name__ == "__main__":

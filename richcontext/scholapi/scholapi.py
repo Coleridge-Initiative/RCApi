@@ -78,11 +78,14 @@ class _ScholInfra:
 
 
     @classmethod
-    def _get_xml_node_value (cls, root, name):
+    def _get_xml_node_value (cls, root, *name):
         """
         return the named value from an XML node, if it exists
         """
-        node = root.find(name)
+        if len(name) == 1:
+            node = root.find(name[0])
+        elif len(name) == 2:
+            node = root.find(name[0], name[1])
 
         if not node:
             return None
@@ -137,7 +140,7 @@ class _ScholInfra:
         timing = 0.0
         message = None
 
-        return meta, timing, message
+        return [_ScholInfraResponse(self, meta, timing, message)]
 
 
     def title_search (self, title):
@@ -159,7 +162,7 @@ class _ScholInfra:
         timing = 0.0
         message = None
 
-        return meta, timing, message
+        return _ScholInfraResponse(self, meta, timing, message)
 
 
     def publication_lookup (self, identifier):
@@ -183,7 +186,7 @@ class _ScholInfra:
         timing = 0.0
         message = None
 
-        return meta, timing, message
+        return _ScholInfraResponse(self, meta, timing, message) 
 
 
     def journal_lookup (self, identifier):
@@ -207,7 +210,7 @@ class _ScholInfra:
         timing = 0.0
         message = None
 
-        return meta, timing, message
+        return _ScholInfraResponse(self, meta, timing, message, False)
 
 
 class _ScholInfra_EuropePMC (_ScholInfra):
@@ -282,7 +285,7 @@ class _ScholInfra_EuropePMC (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_EuropePMC(self, meta, timing, message)
 
 
 class _ScholInfra_OpenAIRE (_ScholInfra):
@@ -312,15 +315,17 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
             result_title = self._get_xml_node_value(result, "title")
 
             if self.title_match(title, result_title):
+                meta["doi"] = self._get_xml_node_value(result, "pid", {"classname": "doi"})
+                meta["title"] = self._get_xml_node_value(result, "title")
                 meta["url"] = self._get_xml_node_value(result, "url")
                 meta["authors"] = [a.text for a in result.find_all("creator")]
                 meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
                 timing = self._mark_elapsed_time(t0)
-                return meta, timing, message
+                return _ScholInfraResponse_OpenAIRE(self, meta, timing, message)
         
         timing = self._mark_elapsed_time(t0)
-        return None, timing, message
+        return _ScholInfraResponse_OpenAIRE(self, None, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -347,7 +352,7 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
         meta = soup.find_all("oaf:result")
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_OpenAIRE(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_OpenAIRE(self, meta, timing, message)]
     
 
 class _ScholInfra_SemanticScholar (_ScholInfra):
@@ -371,7 +376,7 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
             meta = None
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_SemanticScholar(self, meta, timing, message)
 
 
 class _ScholInfra_Unpaywall (_ScholInfra):
@@ -397,7 +402,7 @@ class _ScholInfra_Unpaywall (_ScholInfra):
             meta = None
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Unpaywall(self, meta, timing, message)
 
 
 class _ScholInfra_dissemin (_ScholInfra):
@@ -428,7 +433,7 @@ class _ScholInfra_dissemin (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_dissemin(self, meta, timing, message)
 
 
 class _ScholInfra_Dimensions (_ScholInfra):
@@ -488,10 +493,10 @@ class _ScholInfra_Dimensions (_ScholInfra):
 
                     if len(meta) > 0:
                         timing = self._mark_elapsed_time(t0)
-                        return meta, timing, message
+                        return _ScholInfraResponse_Dimensions(self, meta, timing, message)
         
         timing = self._mark_elapsed_time(t0)
-        return None, timing, message
+        return _ScholInfraResponse_Dimensions(self, None, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=True):
@@ -521,8 +526,8 @@ class _ScholInfra_Dimensions (_ScholInfra):
         meta = response.publications
         
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
-        
+        return [_ScholInfraResponse_Dimensions(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Dimensions(self, meta, timing, message)]
+
 
 class _ScholInfra_RePEc (_ScholInfra):
     """
@@ -542,6 +547,7 @@ class _ScholInfra_RePEc (_ScholInfra):
         return self.cgi_url.format(enc_title)
 
 
+    # TODO make REPEC conform to the base-class methods
     def get_handle (self, title):
         """
         to use the RePEc API, first obtain a handle for a publication
@@ -599,7 +605,7 @@ class _ScholInfra_RePEc (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_RePEc(self, meta, timing, message)
 
 
 class _ScholInfra_SSRN (_ScholInfra):
@@ -654,7 +660,7 @@ class _ScholInfra_SSRN (_ScholInfra):
             if not meta or len(meta) < 1:
                 meta = None
 
-        return meta, timing, message
+        return _ScholInfraResponse_SSRN(self, meta, timing, message)
 
 
     def title_search (self, title):
@@ -695,7 +701,7 @@ class _ScholInfra_SSRN (_ScholInfra):
             meta = None
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_SSRN(self, meta, timing, message)
 
 
 class _ScholInfra_Crossref (_ScholInfra):
@@ -715,7 +721,7 @@ class _ScholInfra_Crossref (_ScholInfra):
             meta = None
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Crossref(self, meta, timing, message)
 
 
     def title_search (self, title):
@@ -745,7 +751,7 @@ class _ScholInfra_Crossref (_ScholInfra):
                 self.parent.logger.debug(meta)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_Crossref(self, meta, timing, message)
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -768,10 +774,10 @@ class _ScholInfra_Crossref (_ScholInfra):
 
         response = requests.get(url).text
         json_response = json.loads(response)
-        meta = json_response["message"]
+        meta = json_response["message"].get('items')
 
-        self._mark_elapsed_time(t0)
-        return meta, timing, message
+        timing = self._mark_elapsed_time(t0)
+        return [_ScholInfraResponse_Crossref(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Crossref(self, meta, timing, message)]
 
 
 class _ScholInfra_PubMed (_ScholInfra):
@@ -883,7 +889,7 @@ class _ScholInfra_PubMed (_ScholInfra):
             meta = meta_list["PubmedArticleSet"]["PubmedArticle"]
                 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_PubMed(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_PubMed(self, meta, timing, message)]
 
                         
     def journal_lookup (self, identifier):
@@ -1065,6 +1071,7 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
+
         try: 
             params = self._get_core_apikey()
             search_query = urllib.parse.quote("doi:\""+ identifier + "\"")
@@ -1090,7 +1097,7 @@ class _ScholInfra_CORE (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_CORE(self, meta, timing, message)
 
 
     def title_search (self, title):
@@ -1113,7 +1120,10 @@ class _ScholInfra_CORE (_ScholInfra):
                 json_response = json.loads(response.text)
 
                 if (json_response["status"] == "OK"):
-                    meta = json_response["data"][0]
+                    for entry in  json_response["data"]:
+                        if entry["title"].lower() == title.lower():
+                            meta = entry
+                            break
                 else:
                     meta = None
                     message = json_response["status"]
@@ -1127,7 +1137,7 @@ class _ScholInfra_CORE (_ScholInfra):
             print(message)
         
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message     
+        return _ScholInfraResponse_CORE(self, meta, timing, message)     
 
 
     def full_text_search (self, search_term, limit=None, exact_match=None):
@@ -1170,7 +1180,7 @@ class _ScholInfra_CORE (_ScholInfra):
             print(message)
                     
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_CORE(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_CORE(self, meta, timing, message)]
 
     
     def journal_lookup (self, identifier):
@@ -1202,7 +1212,7 @@ class _ScholInfra_CORE (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_CORE(self, meta, timing, message, False)
 
 
 class _ScholInfra_ORCID (_ScholInfra): 
@@ -1231,7 +1241,7 @@ class _ScholInfra_ORCID (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_ORCID(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_ORCID(self, meta, timing, message)]
 
 
     def affiliations (self, identifier):
@@ -1258,7 +1268,7 @@ class _ScholInfra_ORCID (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_ORCID(self, meta, timing, message, False)
 
 
     def funding (self, identifier):
@@ -1285,7 +1295,7 @@ class _ScholInfra_ORCID (_ScholInfra):
             print(message)
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_ORCID(self, meta, timing, message, False)
 
 
 class _ScholInfra_NSF_PAR (_ScholInfra): 
@@ -1342,7 +1352,7 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
             print(message) 
 
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return [_ScholInfraResponse_NSF_PAR(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_NSF_PAR(self, None, timing, message)]
 
 
     def title_search (self, title):
@@ -1371,7 +1381,7 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
             print(message) 
         
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_NSF_PAR(self, meta, timing, message)
 
 
     def publication_lookup (self, identifier):
@@ -1400,7 +1410,7 @@ class _ScholInfra_NSF_PAR (_ScholInfra):
             print(message) 
         
         timing = self._mark_elapsed_time(t0)
-        return meta, timing, message
+        return _ScholInfraResponse_NSF_PAR(self, meta, timing, message)
 
     
 ######################################################################
@@ -1411,35 +1421,211 @@ class _ScholInfraResponse:
     manage the response from a specific Scholarly Infrastructure API
     """
 
-    def __init__ (self, parent=None, meta=None, timing=None, message=None):
+    def __init__ (self, parent=None, meta=None, timing=None, message=None, is_publication=True):
         self.parent = parent
         self.meta = meta
         self.timing = timing
         self.message = message
+        self.is_publication = is_publication
 
 
     def doi(self):
-        return None
+        raise NotImplementedError
 
 
     def title(self):
-        return None
+        raise NotImplementedError
 
 
     def authors(self):
-        return None
+        raise NotImplementedError
 
 
     def url(self):
-        return None
+        raise NotImplementedError
 
 
     def journal(self):
-        return None
+        raise NotImplementedError
 
 
     def serialize(self):
         return self.meta
+
+
+class _ScholInfraResponse_EuropePMC(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta["journal"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+class _ScholInfraResponse_OpenAIRE(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["url"] if self.meta else None
+
+
+class _ScholInfraResponse_SemanticScholar(_ScholInfraResponse):
+
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["url"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta["venue"] if self.meta else None
+
+
+class _ScholInfraResponse_Unpaywall(_ScholInfraResponse):
+    pass
+
+
+class _ScholInfraResponse_dissemin(_ScholInfraResponse):
+    pass
+
+
+class _ScholInfraResponse_Dimensions(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta["doi"] if self.meta else None
+
+
+    def title(self):
+        return self.meta["title"] if self.meta else None
+
+
+    def authors(self):
+        return self.meta["authors"] if self.meta else None
+
+
+    def url(self):
+        return self.meta["linkout"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("journal", {}).get("title")
+
+
+class _ScholInfraResponse_RePEc(_ScholInfraResponse):
+    pass
+
+
+class _ScholInfraResponse_SSRN(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta.get("doi") if self.meta else None
+
+
+    def title(self):
+        return self.meta.get("title") if self.meta else None
+
+
+    def authors(self):
+        return self.meta.get("authors") if self.meta else None
+
+
+class _ScholInfraResponse_Crossref(_ScholInfraResponse):
+    
+    def doi(self):
+        return self.meta.get("DOI") if self.meta else None
+
+
+    def title(self):
+        title = self.meta.get("title") if self.meta else None
+        return title[0] if title and len(title) > 0 else None
+
+
+    def authors(self):
+        return self.meta.get("author") if self.meta else None
+
+
+    def url(self):
+        return self.meta.get("URL") if self.meta else None
+
+
+    def journal(self):
+        journal = self.meta.get("container-title") if self.meta else None
+        return journal[0] if journal and len(journal) > 0 else None
+
+
+class _ScholInfraResponse_PubMed(_ScholInfraResponse):
+
+    def pdmid(self):
+        return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
+
+
+    def doi(self):
+        try:
+            pid_list = self.meta.get("MedlineCitation", {}).get("Article", {}).get("ELocationID")
+            if isinstance(pid_list,list):
+                dois = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
+                if len(dois) > 0:
+                    return dois[0]
+
+            if isinstance(pid_list,dict):
+                if pid_list["@EIdType"] == "doi":
+                   return pid_list["#text"]
+        except:
+            return None
+
+
+    def title(self):
+        title = None
+        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
+
+        if article_meta and article_meta.get("ArticleTitle"):
+            if type(article_meta.get("ArticleTitle")) is str:
+                title = article_meta.get("ArticleTitle")
+            elif type(article_meta.get("ArticleTitle")) is dict:
+                title = article_meta.get("ArticleTitle", {}).get("#text")
+
+        return title
+
+
+    def journal(self):
+        if self.is_publication:
+            article_meta = self.meta.get("MedlineCitation", {}).get("Article", {}) if self.meta else {}
+            return article_meta.get("Journal", {}).get("Title")
+        else:
+            return self.meta.get("Title") if self.meta else None
+
+
+    def issn(self):
+        if self.is_publication:
+            return self.meta.get("ISOAbbreviation") if self.meta else None
+        else: 
+            return self.meta.get("ISSN", {}).get("#text") if self.meta else None
 
 
 class _ScholInfraResponse_Datacite(_ScholInfraResponse):
@@ -1466,55 +1652,73 @@ class _ScholInfraResponse_Datacite(_ScholInfraResponse):
         return self.meta.get("attributes",{}).get("publisher") if self.meta else None
 
 
-class _ScholInfraResponse_PubMed(_ScholInfraResponse):
-    
-    def __init__ (self, parent=None, meta=None, timing=None, message=None, is_publication=True):
-        super().__init__(parent, meta, timing, message)
-        self.is_publication = is_publication
-
-    def pdmid(self):
-        return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
-
+class _ScholInfraResponse_CORE(_ScholInfraResponse):
 
     def doi(self):
-        try:
-            pid_list = self.meta.get("MedlineCitation", {}).get("Article", {}).get("ELocationID")
-            if isinstance(pid_list,list):
-                dois = [d["#text"] for d in pid_list if d["@EIdType"] == "doi"]
-                if len(dois) > 0:
-                    return dois[0]
-
-            if isinstance(pid_list,dict):
-                if pid_list["@EIdType"] == "doi":
-                   return pid_list["#text"]
-        except:
-            return None
-
+        if self.is_publication:
+            return self.meta.get("doi") if self.meta else None
+        return None
 
     def title(self):
-        title = None
-        article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
-        if article_meta and article_meta.get("ArticleTitle"):
-            if type(article_meta.get("ArticleTitle")) is str:
-                title = article_meta.get("ArticleTitle")
-            elif type(article_meta.get("ArticleTitle")) is dict:
-                title = article_meta.get("ArticleTitle", {}).get("#text")
-        return title
+        if self.is_publication:
+            return self.meta.get("title") if self.meta else None
+        else:
+            return self.meta.get("title") if self.meta else None
+
+
+    def authors(self):
+        if self.is_publication:
+            return self.meta.get("authors") if self.meta else None
+        return None
+
+
+    def url(self):
+        if self.is_publication:
+            return self.meta.get("downloadUrl") if self.meta else None
+        return None
 
 
     def journal(self):
         if self.is_publication:
-            article_meta = self.meta.get("MedlineCitation", {}).get("Article", {}) if self.meta else {}
-            return article_meta.get("Journal", {}).get("Title")
-        else:
-            return self.meta.get("Title") if self.meta else None
+            return self.meta.get("publisher") if self.meta else None
+        return None
+
+
+class _ScholInfraResponse_ORCID(_ScholInfraResponse):
+
+    def title(self):
+        if self.is_publication:
+            return self.meta.get("work:work-summary", {}).get("work:title", {}).get("common:title") if self.meta else None
+        return None
+
+
+    def authors(self):
+        if self.is_publication:
+            return self.meta.get("work:work-summary", {}).get("common:source", {}).get("common:source-name") if self.meta else None
+        return None 
+
+
+class _ScholInfraResponse_NSF_PAR(_ScholInfraResponse):
+
+    def doi(self):
+        return self.meta.get("DOI") if self.meta else None
+
+
+    def title(self):
+        return self.meta.get("TITLE") if self.meta else None
+
+
+    def authors(self):
+        return self.meta.get("AUTHORS") if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("JOURNAL_NAME") if self.meta else None
 
 
     def issn(self):
-        if self.is_publication:
-            return self.meta.get("ISOAbbreviation") if self.meta else None
-        else: 
-            return self.meta.get("ISSN", {}).get("#text") if self.meta else None
+        return self.meta.get("ISSN") if self.meta else None
+
 
 ######################################################################
 ## federated API access
