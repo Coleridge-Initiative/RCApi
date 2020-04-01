@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="richcontext-scholapi",
-    version="1.1.1",
+    version="1.2.0",
     author="Coleridge Initiative",
     author_email="dataanalytics@coleridgeinitiative.org",
     description="Rich Context API integrations for federating discovery services and metadata exchange across multiple scholarly infrastructure providers",
@@ -37,7 +37,7 @@ setup(
         "selenium",
         "xmltodict",
     ],
-    keywords="Rich Context, DOI, ISSN, ROR, ORCID, PubMed, EuropePMC, Scholix, Crossref, DataCide, OpenAIRE, Unpaywall, dissemin, Semantic Scholar, RePEc, Dimensions, discovery, discovery service, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
+    keywords="Rich Context, DOI, ISSN, ROR, ORCID, PubMed, EuropePMC, Crossref, DataCite, OpenAIRE, Unpaywall, dissemin, Semantic Scholar, RePEc, Dimensions, CORE, discovery, discovery service, federated API, federated metadata, knowledge graph, metadata API, metadata exchange, metadata, persistent identifiers, research publication ontology, research publications, scholarly infrastructure, scholarly metadata, scholarly publishing",
     license="MIT",
     include_package_data=True,
     zip_safe=False
