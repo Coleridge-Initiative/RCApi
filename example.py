@@ -36,18 +36,18 @@ if __name__ == "__main__":
 
     # run it...
     if source.has_credentials():
-        #meta, timing, message = source.title_search(title)
-        meta, timing, message = source.full_text_search(search_term, limit=13, exact_match=False)
+        responses = source.full_text_search(search_term, limit=13, exact_match=True)
 
-    # report results
-    if message:
-        # error case
-        print(message)
-    else:
-        print(json.dumps(meta, indent=4, ensure_ascii=False))
+        # report results
+        if responses[0].message:
+            # error case
+            print(responses[0].message)
+        else:
+            for r in responses:
+                print(json.dumps(r.meta, indent=4, ensure_ascii=False))
 
     # report performance
-    source.report_perf(timing)
+    source.report_perf(responses[0].timing)
 
     if enable_profiling:
         schol.stop_profiling(pr)
