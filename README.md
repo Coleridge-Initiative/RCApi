@@ -87,15 +87,15 @@ title = "Deal or no deal? The prevalence and nutritional quality of price promot
 
 # run it...
 if source.has_credentials():
-    meta, timing, message = source.title_search(title)
+    response = source.title_search(title)
 
     # report results
-    if message:
+    if response.message:
         # error case
-        print(message)
+        print(response.message)
     else:
-        print(meta)
-        source.report_perf(timing)
+        print(response.meta)
+        source.report_perf(response.timing)
 ```
 
 
