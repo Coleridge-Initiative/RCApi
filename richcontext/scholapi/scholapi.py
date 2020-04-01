@@ -1578,7 +1578,7 @@ class _ScholInfraResponse_Crossref(_ScholInfraResponse):
 
 class _ScholInfraResponse_PubMed(_ScholInfraResponse):
 
-    def pdmid(self):
+    def pmid(self):
         return self.meta.get("MedlineCitation", {}).get("PMID", {}).get("#text") if self.meta else None
 
 
