@@ -546,6 +546,7 @@ class _ScholInfra_RePEc (_ScholInfra):
         enc_title = urllib.parse.quote_plus(title.replace("(", "").replace(")", "").replace(":", ""))
         return self.cgi_url.format(enc_title)
 
+
     # TODO make REPEC conform to the base-class methods
     def get_handle (self, title):
         """
@@ -1070,6 +1071,7 @@ class _ScholInfra_CORE (_ScholInfra):
         timing = 0.0
         message = None
         t0 = time.time()
+
         try: 
             params = self._get_core_apikey()
             search_query = urllib.parse.quote("doi:\""+ identifier + "\"")
@@ -1208,6 +1210,7 @@ class _ScholInfra_CORE (_ScholInfra):
             meta = None
             message = f"ERROR: {identifier}"
             print(message)
+
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_CORE(self, meta, timing, message, False)
 
@@ -1600,11 +1603,13 @@ class _ScholInfraResponse_PubMed(_ScholInfraResponse):
     def title(self):
         title = None
         article_meta = self.meta.get("MedlineCitation", {}).get("Article") if self.meta else None
+
         if article_meta and article_meta.get("ArticleTitle"):
             if type(article_meta.get("ArticleTitle")) is str:
                 title = article_meta.get("ArticleTitle")
             elif type(article_meta.get("ArticleTitle")) is dict:
                 title = article_meta.get("ArticleTitle", {}).get("#text")
+
         return title
 
 

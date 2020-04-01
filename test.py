@@ -387,16 +387,20 @@ class TestOpenAPIs (unittest.TestCase):
 
         doi = "10.1371/journal.pone.0013969"
         title = "Caribbean corals in crisis: record thermal stress, bleaching, and mortality in 2005".lower()
-        url = "https://core.ac.uk/download/pdf/143863779.pdf"
-        journal = "Public Library of Science"
+
+        # NB: there may be multiple "correct" responses for the
+        # following -- this test case has some instability
+        urls = ["https://core.ac.uk/download/pdf/143863779.pdf", "https://core.ac.uk/download/pdf/51094169.pdf"]
+        journals = ["Public Library of Science", "NSUWorks"]
 
         if source.has_credentials():
             response = source.publication_lookup(doi)
             source.report_perf(response.timing)
+
             self.assertTrue(response.doi() == doi)
             self.assertTrue(response.title().lower() == title)
-            self.assertTrue(response.url() == url)
-            self.assertTrue(response.journal() == journal)
+            self.assertTrue(response.url() in urls)
+            self.assertTrue(response.journal() in journals)
 
         # error case
         doi = "10.00000/xxx"
