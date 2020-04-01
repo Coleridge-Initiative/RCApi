@@ -1,8 +1,10 @@
 # `richcontext.scholapi` changelog
 
-## 1.1.2
+## 1.2.0
 
 2020-0?-??
+
+  - wrapped most API results in response objects
 
   - `title_search()` for REPEC, Crossref, Pubmed fails more gracefully
 
