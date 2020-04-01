@@ -51,7 +51,7 @@ class TestOpenAPIs (unittest.TestCase):
         if source.has_credentials():
             response = source.title_search(title)
             source.report_perf(response.timing)
-            self.assertTrue(response.pdmid() == expected)
+            self.assertTrue(response.pmid() == expected)
             self.assertTrue(response.doi() == doi)
             self.assertTrue(response.title() == title)
             self.assertTrue(response.journal() == journal)
@@ -62,7 +62,7 @@ class TestOpenAPIs (unittest.TestCase):
             response = source.title_search(title)
             source.report_perf(response.timing)
             self.assertTrue(response.meta is None)
-            self.assertTrue(response.pdmid() is None)
+            self.assertTrue(response.pmid() is None)
             self.assertTrue(response.doi() is None)
             self.assertTrue(response.title() is None)
             self.assertTrue(response.journal() is None)
@@ -79,7 +79,7 @@ class TestOpenAPIs (unittest.TestCase):
         if source.has_credentials():
             response = source.journal_lookup(issn)
             source.report_perf(response.timing)
-            self.assertTrue(response.pdmid() == None)
+            self.assertTrue(response.pmid() == None)
             self.assertTrue(response.doi() == None)
             self.assertTrue(response.title() == None)
             self.assertTrue(response.journal().lower() == expected)
