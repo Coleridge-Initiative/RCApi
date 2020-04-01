@@ -1,5 +1,6 @@
 beautifulsoup4 >= 4.6.3
 biopython >= 1.75
+coverage >= 5.0.1
 crossref-commons >= 0.0.6
 dimcli >= 0.6.2.2
 requests >= 2.23.0

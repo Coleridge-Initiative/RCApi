@@ -46,6 +46,7 @@ class TestOpenAPIs (unittest.TestCase):
         title = "Climate-change-driven accelerated sea-level rise detected in the altimeter era."
         expected = "29440401"
         doi = "10.1073/pnas.1717312115"
+        journal = "Proceedings of the National Academy of Sciences of the United States of America"
 
         if source.has_credentials():
             response = source.title_search(title)
@@ -53,7 +54,18 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(response.pdmid() == expected)
             self.assertTrue(response.doi() == doi)
             self.assertTrue(response.title() == title)
-            self.assertTrue(response.journal() == "Proceedings of the National Academy of Sciences of the United States of America")
+            self.assertTrue(response.journal() == journal)
+            self.assertTrue(response.issn() is None)
+
+        title = "NOT_TO_BE_FOUND"
+        if source.has_credentials():
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta is None)
+            self.assertTrue(response.pdmid() is None)
+            self.assertTrue(response.doi() is None)
+            self.assertTrue(response.title() is None)
+            self.assertTrue(response.journal() is None)
             self.assertTrue(response.issn() is None)
 
 
@@ -113,6 +125,12 @@ class TestOpenAPIs (unittest.TestCase):
             source.report_perf(response.timing)
             self.assertTrue(response.doi() == expected)
         
+        title = "D"
+        if source.has_credentials():
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta is None)
+
 
     def test_crossref_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
