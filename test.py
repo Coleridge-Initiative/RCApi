@@ -294,16 +294,16 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "https://doi.org/10.1016/j.appet.2017.07.006"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["doi_url"] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta["doi_url"] == expected)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
 
 
     def test_dissemin_publication_lookup (self):
@@ -314,16 +314,16 @@ class TestOpenAPIs (unittest.TestCase):
         expected = "2017-10-01"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            source.report_perf(timing)
-            self.assertTrue(meta["paper"]["date"] == expected)
+            response = source.publication_lookup(doi)
+            source.report_perf(response.timing)
+            self.assertTrue(response.meta["paper"]["date"] == expected)
 
         # error case
         doi = "10.00000/xxx"
 
         if source.has_credentials():
-            meta, timing, message = source.publication_lookup(doi)
-            self.assertTrue(meta == None)
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
 
 
     def test_semantic_publication_lookup (self):
