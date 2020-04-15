@@ -2,9 +2,11 @@
 
 ## 1.2.0
 
-2020-0?-??
+2020-04-01
 
-  - wrapped most API results in response objects
+  - *THIS RELEASE WILL BREAK MANY THINGS*
+
+  - wrapped API results in response objects (except not RePEc)
 
   - `title_search()` for REPEC, Crossref, Pubmed fails more gracefully
 
