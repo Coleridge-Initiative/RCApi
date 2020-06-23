@@ -460,6 +460,31 @@ class _ScholInfra_Dimensions (_ScholInfra):
             self.api_obj = dimcli.Dsl(verbose=False)
 
 
+    def _clean_search_phrase(self, phrase):
+        # Special Chars: ^ " : ~ \ [ ] { } ( ) ! | & +
+        cleaned_phrase = phrase.translate(
+            str.maketrans(
+                {
+                    "^":  r"\^",
+                    '"':  r'\"',
+                    ":":  r"\:",
+                    "~":  r"\~",
+                    "\\": r"\\",
+                    "[":  r"\[",
+                    "]":  r"\]",
+                    "{":  r"\{",
+                    "}":  r"\}",
+                    "(":  r"\(",
+                    ")":  r"\)",
+                    "!":  r"\!",
+                    "|":  r"\|",
+                    "&":  r"\&",
+                    "+":  r"\+"
+                }
+            )
+        )
+        return cleaned_phrase
+
     def _run_query (self, query):
         """
         run one Dimensions API query, and first login if needed
@@ -477,7 +502,7 @@ class _ScholInfra_Dimensions (_ScholInfra):
         message = None
 
         t0 = time.time()
-        enc_title = title.replace('"', '').replace(":", " ").strip()
+        enc_title = self._clean_search_phrase(title)
         query = 'search publications in title_only for "\\"{}\\"" return publications[all]'.format(enc_title)
 
         self._login()
