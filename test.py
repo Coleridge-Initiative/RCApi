@@ -363,6 +363,7 @@ class TestOpenAPIs (unittest.TestCase):
         if source.has_credentials():
             response = source.publication_lookup(doi)
             self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == "Paper not found")
 
 
     ######################################################################
