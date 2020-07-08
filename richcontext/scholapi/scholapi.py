@@ -379,7 +379,6 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
         elif "message" in meta:
             message = meta["message"]
             meta = None
-
             
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_SemanticScholar(self, meta, timing, message)
