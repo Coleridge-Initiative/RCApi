@@ -315,10 +315,22 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
             result_title = self._get_xml_node_value(result, "title")
 
             if self.title_match(title, result_title):
-                meta["doi"] = self._get_xml_node_value(result, "pid", {"classname": "doi"})
-                meta["title"] = self._get_xml_node_value(result, "title")
-                meta["url"] = self._get_xml_node_value(result, "url")
-                meta["authors"] = [a.text for a in result.find_all("creator")]
+                val = self._get_xml_node_value(result, "pid", {"classname": "doi"})
+                if val:
+                    meta["doi"] = val
+                
+                val  = self._get_xml_node_value(result, "title")
+                if val:
+                    meta["title"] = val
+
+                val = self._get_xml_node_value(result, "url")
+                if val:
+                     meta["url"] = val
+                
+                val = [a.text for a in result.find_all("creator")]
+                if val:
+                    meta["authors"] = val
+
                 meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
                 timing = self._mark_elapsed_time(t0)

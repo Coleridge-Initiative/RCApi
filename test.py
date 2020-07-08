@@ -247,6 +247,12 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(response.authors() == authors)
             self.assertTrue(response.meta["open"])
 
+        title = "Quantitative easing, portfolio rebalancing and credit growth: Micro evidence from Germany"
+        if source.has_credentials():
+            response = source.title_search(title)
+            source.report_perf(response.timing)
+            self.assertTrue("doi" not in response.meta)
+            self.assertTrue(response.title() == title)    
     
     def test_openaire_fulltext_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
