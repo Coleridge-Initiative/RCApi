@@ -371,10 +371,7 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
         t0 = time.time()
         url = self._get_api_url(identifier)
         meta = json.loads(requests.get(url).text)
-        if not meta or len(meta) < 1:
-            meta = None
-        elif "error" in meta: 
-            message = meta["error"]
+        if not meta or len(meta) < 1 or "error" in meta:
             meta = None
         elif "message" in meta:
             message = meta["message"]
