@@ -361,6 +361,15 @@ class TestOpenAPIs (unittest.TestCase):
         if source.has_credentials():
             response = source.publication_lookup(doi)
             self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == None)
+
+        # another error case
+        doi = "10.1023/A:1018882711314"
+
+        if source.has_credentials():
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == None)
 
 
     def test_semantic_publication_lookup (self):

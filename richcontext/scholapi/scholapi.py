@@ -421,7 +421,9 @@ class _ScholInfra_dissemin (_ScholInfra):
         try:
             t0 = time.time()
             url = self._get_api_url(identifier)
-            meta = json.loads(requests.get(url).text)
+            response = requests.get(url)
+            if response.status_code == requests.codes.ok:
+                meta = json.loads(response.text)
 
             if not meta or len(meta) < 1 or "error" in meta:
                 meta = None
