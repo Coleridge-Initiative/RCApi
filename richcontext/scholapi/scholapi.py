@@ -359,6 +359,22 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
     """
     http://api.semanticscholar.org/
     """
+    def __init__ (self, parent=None, name="Generic", api_url=None, cgi_url=None):
+        super(_ScholInfra_SemanticScholar, self).__init__( parent, name, api_url, cgi_url )
+        self.time = 0
+        self.tries = 0
+        self.MAX_QUERIES = 100
+        self.MAX_ELAPSED_TIME = 5 * 60
+
+    def check_limit(self, t):
+        if self.tries > 100 and (t - self.time) <= self.MAX_ELAPSED_TIME:
+            print("We are sleeping for {}} secs".format( (t - self.time)))
+            time.sleep( (t - self.time))
+        elif self.tries <= 100:
+            self.tries += 1
+        elif (t - self.time) > self.MAX_ELAPSED_TIME:
+            self.time = time.time()
+            self.tries = 0
 
     def publication_lookup (self, identifier):
         """
@@ -369,6 +385,9 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
         message = None
 
         t0 = time.time()
+
+        self.check_limit(t0)
+
         url = self._get_api_url(identifier)
         meta = json.loads(requests.get(url).text)
 
