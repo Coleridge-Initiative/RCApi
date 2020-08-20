@@ -315,12 +315,22 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.unpaywall
 
         doi = "10.1016/j.appet.2017.07.006"
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases"
+        url = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5574185"
+        authors_num = 4
+        journal = "Appetite"
+
         expected = "https://doi.org/10.1016/j.appet.2017.07.006"
 
         if source.has_credentials():
             response = source.publication_lookup(doi)
             source.report_perf(response.timing)
             self.assertTrue(response.meta["doi_url"] == expected)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.url() == url)
+            self.assertTrue(response.journal() == journal)
+            self.assertTrue(len(response.authors()) == authors_num)
 
         # error case
         doi = "10.00000/xxx"
@@ -335,12 +345,21 @@ class TestOpenAPIs (unittest.TestCase):
         source = schol.dissemin
 
         doi = "10.1016/j.appet.2017.07.006"
+        title = "Deal or no deal? The prevalence and nutritional quality of price promotions among U.S. food and beverage purchases"
+        journal = "Appetite"
+        authors_num = 4
         expected = "2017-10-01"
 
         if source.has_credentials():
             response = source.publication_lookup(doi)
             source.report_perf(response.timing)
             self.assertTrue(response.meta["paper"]["date"] == expected)
+            self.assertTrue(response.doi() == doi)
+            self.assertTrue(response.title() == title)
+            self.assertTrue(response.journal() == journal)
+            self.assertTrue(len(response.authors()) == authors_num)
+            self.assertTrue(response.url() is None)
+
 
         # error case
         doi = "10.00000/xxx"
@@ -348,6 +367,15 @@ class TestOpenAPIs (unittest.TestCase):
         if source.has_credentials():
             response = source.publication_lookup(doi)
             self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == None)
+
+        # another error case
+        doi = "10.1023/A:1018882711314"
+
+        if source.has_credentials():
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
+            self.assertTrue(response.message == None)
 
 
     def test_semantic_publication_lookup (self):

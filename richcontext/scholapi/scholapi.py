@@ -421,7 +421,9 @@ class _ScholInfra_dissemin (_ScholInfra):
         try:
             t0 = time.time()
             url = self._get_api_url(identifier)
-            meta = json.loads(requests.get(url).text)
+            response = requests.get(url)
+            if response.status_code == requests.codes.ok:
+                meta = json.loads(response.text)
 
             if not meta or len(meta) < 1 or "error" in meta:
                 meta = None
@@ -1548,11 +1550,49 @@ class _ScholInfraResponse_SemanticScholar(_ScholInfraResponse):
 
 
 class _ScholInfraResponse_Unpaywall(_ScholInfraResponse):
-    pass
+    
+    def doi(self):
+        return self.meta.get("doi") if self.meta else None
+
+
+    def title(self):
+        return self.meta.get("title") if self.meta else None
+
+
+    def authors(self):
+        return self.meta.get("z_authors") if self.meta else None
+
+
+    def url(self):
+        return self.meta.get("best_oa_location", {}).get("url") if self.meta else None
+
+
+    def journal(self):
+        return self.meta.get("journal_name") if self.meta else None
 
 
 class _ScholInfraResponse_dissemin(_ScholInfraResponse):
-    pass
+
+    def doi(self):
+        records = self.meta.get("paper", {}).get("records", []) if self.meta else []
+        return records[0].get("doi") if records else None
+
+
+    def title(self):
+        return self.meta.get("paper", {}).get("title") if self.meta else None
+
+
+    def authors(self):
+        return self.meta.get("paper", {}).get("authors") if self.meta else None
+
+
+    def url(self):
+        self.meta.get("paper", {}).get("pdf_url") if self.meta else None
+
+
+    def journal(self):
+        records = self.meta.get("paper", {}).get("records", []) if self.meta else []
+        return records[0].get("journal") if records else None
 
 
 class _ScholInfraResponse_Dimensions(_ScholInfraResponse):
