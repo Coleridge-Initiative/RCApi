@@ -404,6 +404,13 @@ class TestOpenAPIs (unittest.TestCase):
             response = source.publication_lookup(doi)
             self.assertTrue(response.meta == None)
 
+        # another error case
+        doi = "10.1641/0006-3568(2005)055[0879:EITLSA]2.0.CO;2"
+
+        if source.has_credentials():
+            response = source.publication_lookup(doi)
+            self.assertTrue(response.meta == None)
+
 
     ######################################################################
     ## Misc. family of APIs

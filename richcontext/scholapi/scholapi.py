@@ -382,11 +382,16 @@ class _ScholInfra_SemanticScholar (_ScholInfra):
 
         t0 = time.time()
         url = self._get_api_url(identifier)
-        meta = json.loads(requests.get(url).text)
+        response = requests.get(url)
+        if response.status_code == requests.codes.ok:
+            meta = json.loads(response.text)
 
         if not meta or len(meta) < 1 or "error" in meta:
             meta = None
-
+        elif "message" in meta:
+            message = meta["message"]
+            meta = None
+            
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_SemanticScholar(self, meta, timing, message)
 
