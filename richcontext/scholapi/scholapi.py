@@ -713,13 +713,17 @@ class _ScholInfra_Crossref (_ScholInfra):
         meta = None
         timing = 0.0
         message = None
-
         t0 = time.time()
-        meta = crossref_commons.retrieval.get_publication_as_json(identifier)
-        
-        if not meta or len(meta) < 1:
+        try: 
+            meta = crossref_commons.retrieval.get_publication_as_json(identifier)
+            if not meta or len(meta) < 1:
+                meta = None
+        except:
+            print(traceback.format_exc())
             meta = None
-
+            message = f"ERROR: {identifier}"
+            print(message)  
+    
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_Crossref(self, meta, timing, message)
 
@@ -731,25 +735,30 @@ class _ScholInfra_Crossref (_ScholInfra):
         meta = None
         timing = 0.0
         message = None
-
         t0 = time.time()
-        query = "query.bibliographic={}".format(urllib.parse.quote(title))
-        url = self._get_api_url(query)
+        try:
+            query = "query.bibliographic={}".format(urllib.parse.quote(title))
+            url = self._get_api_url(query)
 
-        response = requests.get(url).text
-        json_response = json.loads(response)
+            response = requests.get(url).text
+            json_response = json.loads(response)
 
-        items = json_response["message"]["items"]
-        first_item = items[0] if len(items) > 0 else {}
-        titles = first_item.get("title", [])
-        result_title = titles[0] if len(titles) > 0 else None
+            items = json_response["message"]["items"]
+            first_item = items[0] if len(items) > 0 else {}
+            titles = first_item.get("title", [])
+            result_title = titles[0] if len(titles) > 0 else None
 
-        if self.title_match(title, result_title):
-            meta = first_item
+            if self.title_match(title, result_title):
+                meta = first_item
 
-            if self.parent.logger:
-                self.parent.logger.debug(meta)
-
+                if self.parent.logger:
+                    self.parent.logger.debug(meta)
+        except: 
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {title}"
+            print(message)    
+         
         timing = self._mark_elapsed_time(t0)
         return _ScholInfraResponse_Crossref(self, meta, timing, message)
 
@@ -769,12 +778,18 @@ class _ScholInfra_Crossref (_ScholInfra):
             limit = 1000
 
         t0 = time.time()
-        query = "query=%22{}%22/type/journal-article&rows={}".format(urllib.parse.quote(search_term), limit)
-        url = self._get_api_url(query)
+        try: 
+            query = "query=%22{}%22/type/journal-article&rows={}".format(urllib.parse.quote(search_term), limit)
+            url = self._get_api_url(query)
 
-        response = requests.get(url).text
-        json_response = json.loads(response)
-        meta = json_response["message"].get('items')
+            response = requests.get(url).text
+            json_response = json.loads(response)
+            meta = json_response["message"].get('items')
+        except: 
+            print(traceback.format_exc())
+            meta = None
+            message = f"ERROR: {search_term}"
+            print(message)    
 
         timing = self._mark_elapsed_time(t0)
         return [_ScholInfraResponse_Crossref(self, data, timing, message) for data in meta] if meta else [_ScholInfraResponse_Crossref(self, meta, timing, message)]

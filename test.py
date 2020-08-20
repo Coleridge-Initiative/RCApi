@@ -92,7 +92,7 @@ class TestOpenAPIs (unittest.TestCase):
 
     ######################################################################
     ## Scholix family of APIs
-
+    @ignore_warnings
     def test_crossref_publication_lookup (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
         source = schol.crossref
@@ -112,6 +112,12 @@ class TestOpenAPIs (unittest.TestCase):
             self.assertTrue(response.url() == url)
             self.assertTrue(response.journal() == journal)
 
+        doi_error = "10.XXXX.XXXX"
+        if source.has_credentials():
+            response = source.publication_lookup(doi_error)
+            source.report_perf(response.timing)
+            self.assertTrue(response.message is not None)
+            self.assertTrue(response.meta is None)
 
     def test_crossref_title_search (self):
         schol = rc_scholapi.ScholInfraAPI(config_file="rc.cfg")
