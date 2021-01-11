@@ -237,11 +237,9 @@ class _ScholInfra_EuropePMC (_ScholInfra):
 
             meta = OrderedDict()
             result_list = soup.find_all("result")
-
             for result in result_list:
                 if self.parent.logger:
                     self.parent.logger.debug(result)
-
                 result_title = self._get_xml_node_value(result, "title")
 
                 if self.title_match(title, result_title):
@@ -260,12 +258,19 @@ class _ScholInfra_EuropePMC (_ScholInfra):
                             meta["pdf"] = "http://europepmc.org/articles/{}?pdf=render".format(meta["pmcid"])
 
                     val = self._get_xml_node_value(result, "journaltitle")
-
                     if val:
                         meta["journal"] = val
 
-                    val = self._get_xml_node_value(result, "authorstring")
+                    val = self._get_xml_node_value(result, "journalissn")
+                    if val:
+                        meta['issn'] = val
 
+                    val = self._get_xml_node_value(result, "pubyear")
+                    if val:
+                        meta['year'] = val
+
+                    val = self._get_xml_node_value(result, "authorstring")
+                    
                     if val:
                         meta["authors"] = val.split(", ")
 
@@ -325,11 +330,23 @@ class _ScholInfra_OpenAIRE (_ScholInfra):
 
                 val = self._get_xml_node_value(result, "url")
                 if val:
-                     meta["url"] = val
+                    meta["url"] = val
+
+                val = self._get_xml_node_value(result, "dateofacceptance")
+                if val:
+                    meta["dateofacceptance"] = val
                 
                 val = [a.text for a in result.find_all("creator")]
                 if val:
                     meta["authors"] = val
+
+                val = self._get_xml_node_value(result, "journal")
+                if val:
+                    meta['journal'] = val
+
+                val = self._get_xml_node_value(result, "issn")
+                if val:
+                    meta['issn'] = val
 
                 meta["open"] = len(result.find_all("bestaccessright", {"classid": "OPEN"})) > 0
 
@@ -789,12 +806,47 @@ class _ScholInfra_Crossref (_ScholInfra):
 
             items = json_response["message"]["items"]
             first_item = items[0] if len(items) > 0 else {}
-            titles = first_item.get("title", [])
+            titles = first_item.get("title", [])    
             result_title = titles[0] if len(titles) > 0 else None
 
             if self.title_match(title, result_title):
-                meta = first_item
+                raw_meta = first_item
+                meta = dict()
+                if 'title' in raw_meta:
+                    meta['title'] = raw_meta["title"]
+                else:
+                    meta['title'] = None
+                
+                if 'DOI' in raw_meta:
+                    meta['doi'] = raw_meta["DOI"]
+                else:
+                    meta['doi'] =  None
+                
+                if 'container-title' in raw_meta:
+                    meta['journal'] = raw_meta["container-title"][0]
+                else:
+                    meta['journal'] = None
+                
+                if 'ISSN' in raw_meta:
+                    meta['issn'] = raw_meta["ISSN"][0]
+                else:
+                    meta['issn'] = None
 
+                if "published-print" in raw_meta:
+                    meta['year'] = raw_meta["published-print"]['date-parts'][0][0] 
+                else:
+                    meta['year'] = None
+                
+                if 'author' in raw_meta:
+                    meta['authors'] = raw_meta["author"]
+                else:
+                    meta['authors'] = None
+                
+                if 'URL' in raw_meta:
+                    meta['url'] = raw_meta["URL"]
+                else:
+                    meta['url'] =  None
+                # meta = raw_meta
                 if self.parent.logger:
                     self.parent.logger.debug(meta)
         except: 
@@ -1508,6 +1560,14 @@ class _ScholInfraResponse:
         raise NotImplementedError
 
 
+    def issn(self):
+        raise NotImplementedError
+
+
+    def year(self):
+        raise NotImplementedError
+
+
     def serialize(self):
         return self.meta
 
@@ -1521,10 +1581,16 @@ class _ScholInfraResponse_EuropePMC(_ScholInfraResponse):
     def journal(self):
         return self.meta["journal"] if self.meta else None
 
+    def issn(self):
+        return self.meta["issn"] if self.meta else None
 
     def authors(self):
         return self.meta["authors"] if self.meta else None
 
+
+    def year(self):
+        return self.meta["year"] if self.meta else None
+        
 
 class _ScholInfraResponse_OpenAIRE(_ScholInfraResponse):
     
@@ -1542,6 +1608,19 @@ class _ScholInfraResponse_OpenAIRE(_ScholInfraResponse):
 
     def url(self):
         return self.meta["url"] if self.meta else None
+
+
+    def year(self):
+        return self.meta["year"] if self.meta else None
+
+
+    def journal(self):
+        return self.meta["journal"] if self.meta else None
+
+
+    def issn(self):
+        return self.meta["isnn"] if self.meta else None
+
 
 
 class _ScholInfraResponse_SemanticScholar(_ScholInfraResponse):
@@ -1566,6 +1645,10 @@ class _ScholInfraResponse_SemanticScholar(_ScholInfraResponse):
         return self.meta["venue"] if self.meta else None
 
 
+    def year(self):
+        return self.meta['year'] if self.meta else None
+
+
 class _ScholInfraResponse_Unpaywall(_ScholInfraResponse):
     
     def doi(self):
@@ -1586,6 +1669,10 @@ class _ScholInfraResponse_Unpaywall(_ScholInfraResponse):
 
     def journal(self):
         return self.meta.get("journal_name") if self.meta else None
+
+
+    def year(self):
+        return self.meta["year"] if self.meta else None
 
 
 class _ScholInfraResponse_dissemin(_ScholInfraResponse):
@@ -1672,8 +1759,11 @@ class _ScholInfraResponse_Crossref(_ScholInfraResponse):
 
 
     def journal(self):
-        journal = self.meta.get("container-title") if self.meta else None
-        return journal[0] if journal and len(journal) > 0 else None
+        return self.meta.get("journal") if self.meta else None
+
+
+    def year(self):
+        return self.meta.get("year") if self.meta else None
 
 
 class _ScholInfraResponse_PubMed(_ScholInfraResponse):
